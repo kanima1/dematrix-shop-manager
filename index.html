@@ -89,9 +89,12 @@
   .multiselect-wrap{position:relative}
   .multiselect-button{width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center}
   .multiselect-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;box-shadow:0 10px 24px rgba(15,23,42,.12);z-index:15;display:none;max-height:220px;overflow:auto}
-  .multiselect-menu .performance-option{display:block;width:100%;text-align:left;border:none;background:transparent;color:var(--text);padding:4px 0;line-height:1.2;cursor:pointer;border-radius:4px;font:inherit;margin:0}
+  .multiselect-menu .performance-option{display:flex;align-items:center;justify-content:flex-start;gap:6px;width:100%;text-align:left;border:none;background:transparent;color:var(--text);padding:3px 0;line-height:1.1;cursor:pointer;border-radius:4px;font:inherit;margin:0;min-height:18px;user-select:none}
   .multiselect-menu .performance-option:hover{background:var(--bg)}
   .multiselect-menu .performance-option.selected{background:var(--accent-bg);color:var(--accent-text)}
+  .multiselect-menu .performance-option-check{display:inline-block;width:10px;text-align:center;visibility:hidden;font-size:12px;line-height:1}
+  .multiselect-menu .performance-option.selected .performance-option-check{visibility:visible}
+  .multiselect-menu .performance-option-label{display:inline-block}
   .account-wrap{position:relative}
   .account-btn{background:var(--card);border:1px solid var(--border-strong);border-radius:999px;padding:8px 10px;cursor:pointer;font-size:16px}
   .account-panel{position:absolute;right:0;top:46px;width:260px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.12);padding:12px;z-index:20;display:none}
@@ -976,8 +979,8 @@ function renderPerformanceSelectors(){
   const accTypes = data.settings.accessoryTypes || [];
   const phoneMenu = document.getElementById('calcPhoneModelsMenu');
   const accMenu = document.getElementById('calcAccTypesMenu');
-  if(phoneMenu) phoneMenu.innerHTML = phoneModels.map(model=>`<button type="button" class="performance-option selected" data-value="${model}" onclick="togglePerformanceSelectorOption('phone', this)">${model}</button>`).join('');
-  if(accMenu) accMenu.innerHTML = accTypes.map(type=>`<button type="button" class="performance-option selected" data-value="${type}" onclick="togglePerformanceSelectorOption('acc', this)">${type}</button>`).join('');
+  if(phoneMenu) phoneMenu.innerHTML = phoneModels.map(model=>`<button type="button" class="performance-option selected" data-value="${model}" onclick="togglePerformanceSelectorOption('phone', this)"><span class="performance-option-check" aria-hidden="true">✓</span><span class="performance-option-label">${model}</span></button>`).join('');
+  if(accMenu) accMenu.innerHTML = accTypes.map(type=>`<button type="button" class="performance-option selected" data-value="${type}" onclick="togglePerformanceSelectorOption('acc', this)"><span class="performance-option-check" aria-hidden="true">✓</span><span class="performance-option-label">${type}</span></button>`).join('');
   updatePerformanceSelectorSummary('phone');
   updatePerformanceSelectorSummary('acc');
 }
