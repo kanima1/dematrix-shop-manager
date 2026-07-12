@@ -89,7 +89,8 @@
   .multiselect-wrap{position:relative}
   .multiselect-button{width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center}
   .multiselect-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;box-shadow:0 10px 24px rgba(15,23,42,.12);z-index:15;display:none;max-height:220px;overflow:auto}
-  .multiselect-menu label{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:400;color:var(--text);width:100%;overflow:visible}
+  .multiselect-menu label{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:400;color:var(--text);width:100%;text-align:left}
+  .multiselect-menu label input[type="checkbox"]{flex-shrink:0;margin:0}
   .account-wrap{position:relative}
   .account-btn{background:var(--card);border:1px solid var(--border-strong);border-radius:999px;padding:8px 10px;cursor:pointer;font-size:16px}
   .account-panel{position:absolute;right:0;top:46px;width:260px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.12);padding:12px;z-index:20;display:none}
@@ -1300,13 +1301,13 @@ function renderLowStockNotifications(){
   const items = getLowStockItems();
   badge.textContent = items.length;
   badge.style.display = items.length ? 'inline-flex' : 'none';
-  panel.innerHTML = items.length ? `
+  panel.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
       <strong style="font-size:12px">Low stock</strong>
       <button class="secondary" type="button" onclick="dismissLowStockItems()" style="padding:4px 8px;font-size:12px">Clear</button>
     </div>
-    ${items.map(item=>`<div class="notif-item"><strong>${item.name}</strong><div style="font-size:12px;color:var(--text-muted)">${item.type} • ${item.count} available</div></div>`).join('')}
-  ` : '<div class="notif-empty">No low-stock items.</div>';
+    ${items.length ? items.map(item=>`<div class="notif-item"><strong>${item.name}</strong><div style="font-size:12px;color:var(--text-muted)">${item.type} • ${item.count} available</div></div>`).join('') : '<div class="notif-empty">No low-stock items.</div>'}
+  `;
 }
 function toggleNotifications(){
   const panel = document.getElementById('notifPanel');
