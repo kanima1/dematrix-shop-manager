@@ -1664,6 +1664,7 @@ document.getElementById('ia_date').valueAsDate = new Date();
             if(snap.exists()){
               suppressNextIncoming = true;
               window.applyCloudData(snap.data());
+              suppressNextIncoming = false;
             }
             setSyncStatus('Synced');
           },
