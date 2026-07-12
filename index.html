@@ -4,27 +4,50 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dematrix Shop Manager</title>
+<link rel="manifest" href="./manifest.json">
 <style>
   :root{
-    --bg:#f5f6f8; --card:#ffffff; --border:#e0e2e7; --border-strong:#c7cad1;
-    --text:#1c1f26; --text-2:#5a6070; --text-muted:#9098a8;
-    --accent:#1c6dd0; --accent-bg:#e8f0fd; --accent-text:#0d4fa3;
-    --danger:#c0392b; --danger-bg:#fbe9e7; --success:#1e8e5a; --success-bg:#e6f7ee;
-    --warn:#b5860a; --warn-bg:#fff6e0;
-    --radius:8px;
+    --bg:#f3f6fb; --card:#ffffff; --card-alt:#f8fbff; --border:#dfe7f1; --border-strong:#c9d5e4;
+    --text:#182231; --text-2:#516074; --text-muted:#73839a;
+    --accent:#4f46e5; --accent-2:#0ea5a4; --accent-bg:#ecebff; --accent-text:#4338ca;
+    --danger:#d9485f; --danger-bg:#ffe7ec; --success:#0f9d70; --success-bg:#e5faf2;
+    --warn:#ca7a04; --warn-bg:#fff3db;
+    --radius:10px;
+  }
+  [data-theme="dark"]{
+    --bg:#07111f; --card:#0f1c2d; --card-alt:#16253a; --border:#223249; --border-strong:#304666;
+    --text:#eef4ff; --text-2:#a8bacd; --text-muted:#7890aa;
+    --accent:#7c8cff; --accent-2:#34d3c3; --accent-bg:#1f2a4d; --accent-text:#dfe3ff;
+    --danger:#ff7b72; --danger-bg:#3a1f25; --success:#37c7b7; --success-bg:#12382d;
+    --warn:#ffbf5f; --warn-bg:#3d2c0e;
   }
   *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);transition:background .2s,color .2s}
   header{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
   header h1{font-size:17px;margin:0;font-weight:600}
   header .sub{font-size:12px;color:var(--text-muted)}
   #backBtn{display:none;background:none;border:1px solid var(--border-strong);border-radius:var(--radius);padding:7px 12px;font-size:13px;cursor:pointer;color:var(--text)}
+  .notif-wrap{position:relative}
+  .notif-btn{position:relative;background:var(--card);border:1px solid var(--border-strong);border-radius:999px;padding:8px 10px;cursor:pointer;font-size:16px}
+  .notif-badge{position:absolute;top:-4px;right:-2px;background:var(--danger);color:#fff;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:700;display:none}
+  .notif-panel{position:absolute;right:0;top:46px;width:280px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.12);padding:10px;z-index:20;display:none}
+  .notif-panel .notif-item{padding:8px 6px;border-bottom:1px solid var(--border)}
+  .notif-panel .notif-item:last-child{border-bottom:none}
+  .notif-panel .notif-empty{color:var(--text-muted);font-size:12px;padding:6px 2px}
   main{max-width:920px;margin:0 auto;padding:20px}
   .home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:10px}
-  .home-btn{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px 16px;text-align:left;cursor:pointer;font-size:15px;font-weight:600;color:var(--text);display:flex;flex-direction:column;gap:6px;transition:border-color .15s}
-  .home-btn:hover{border-color:var(--accent)}
+  .home-btn{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px 16px;text-align:left;cursor:pointer;font-size:15px;font-weight:600;color:var(--text);display:flex;flex-direction:column;gap:6px;transition:border-color .15s,transform .15s;box-shadow:0 8px 20px rgba(15,23,42,.04)}
+  .home-btn:hover{border-color:var(--accent);transform:translateY(-1px)}
   .home-btn .desc{font-size:12px;font-weight:400;color:var(--text-muted)}
   .home-btn .num{font-size:11px;color:var(--accent-text);background:var(--accent-bg);padding:2px 7px;border-radius:20px;width:fit-content}
+  .home-search-card{margin-bottom:16px}
+  .search-results{display:grid;gap:10px;margin-top:12px}
+  .search-result-group{background:var(--card-alt);border:1px solid var(--border);border-radius:10px;padding:12px}
+  .search-result-group h3{margin:0 0 10px;font-size:13px;color:var(--accent-text)}
+  .search-result-item{padding:10px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  .search-result-item strong{font-size:13px;display:block}
+  .search-result-meta{font-size:12px;color:var(--text-muted)}
+  .search-result-item .pill{font-size:11px;padding:4px 8px;border-radius:999px;background:var(--accent-bg);color:var(--accent-text)}
   .screen{display:none}
   .screen.active{display:block}
   .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px}
@@ -34,12 +57,12 @@
   .subnav button.active{background:var(--text);color:#fff;border-color:var(--text)}
   form .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
   label{display:block;font-size:12px;color:var(--text-2);margin-bottom:4px;font-weight:500}
-  input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:14px;background:#fff;color:var(--text)}
+  input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:14px;background:var(--card);color:var(--text)}
   .field{margin-bottom:0}
-  .actions{margin-top:16px;display:flex;gap:10px}
-  button.primary{background:var(--text);color:#fff;border:none;border-radius:6px;padding:9px 18px;font-size:14px;cursor:pointer;font-weight:500}
-  button.secondary{background:#fff;border:1px solid var(--border-strong);border-radius:6px;padding:9px 18px;font-size:14px;cursor:pointer}
-  button.danger-btn{background:var(--danger-bg);color:var(--danger);border:1px solid #f0c8c2;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer}
+  .actions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+  button.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border:none;border-radius:6px;padding:9px 18px;font-size:14px;cursor:pointer;font-weight:600;box-shadow:0 8px 18px rgba(79,70,229,.18)}
+  button.secondary{background:var(--card);border:1px solid var(--border-strong);border-radius:6px;padding:9px 18px;font-size:14px;cursor:pointer;color:var(--text)}
+  button.danger-btn{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger-bg);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer}
   table{width:100%;border-collapse:collapse;font-size:13px}
   th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
   th{color:var(--text-muted);font-weight:600;font-size:11px;text-transform:uppercase}
@@ -92,6 +115,10 @@
     <div class="sub" id="pageSub">Sales · repairs · trade-ins · inventory</div>
   </div>
   <div style="display:flex;align-items:center;gap:14px">
+    <div class="notif-wrap">
+      <button id="notifBtn" class="notif-btn" onclick="toggleNotifications()" aria-label="Low stock notifications">🔔<span id="notifBadge" class="notif-badge"></span></button>
+      <div id="notifPanel" class="notif-panel"></div>
+    </div>
     <div id="syncStatus"><span class="dot"></span><span id="syncStatusText">Syncing…</span></div>
     <button id="backBtn" onclick="goHome()">← Home</button>
   </div>
@@ -101,15 +128,20 @@
 
   <!-- HOME -->
   <div id="screen-home" class="screen active">
+    <div class="card home-search-card">
+      <h2>Search records</h2>
+      <input type="search" id="homeSearchInput" placeholder="Search by serial / IMEI" oninput="renderHomeSearchResults()">
+      <div id="homeSearchResults" class="search-results"></div>
+    </div>
     <div class="home-grid">
       <button class="home-btn" onclick="showScreen('sales')"><span class="num">1</span>Sales<span class="desc">Phones and accessories</span></button>
       <button class="home-btn" onclick="showScreen('repair')"><span class="num">2</span>Repair<span class="desc">Jobs, status, vendors</span></button>
       <button class="home-btn" onclick="showScreen('tradein')"><span class="num">3</span>Trade-in<span class="desc">Device swaps</span></button>
-      <button class="home-btn" onclick="showScreen('itemedit')"><span class="num">4</span>Item editing<span class="desc">Update inventory</span></button>
-      <button class="home-btn" onclick="openCalc()"><span class="num">5</span>Capital &amp; profit/loss<span class="desc">Password protected</span></button>
+      <button class="home-btn" onclick="showScreen('itemedit')"><span class="num">4</span>Inventory management<span class="desc">Update inventory</span></button>
+      <button class="home-btn" onclick="openCalc()"><span class="num">5</span>Performance<span class="desc">Password protected</span></button>
       <button class="home-btn" onclick="showScreen('activity')"><span class="num">6</span>Activity data<span class="desc">Reports and trends</span></button>
       <button class="home-btn" onclick="showScreen('settings')"><span class="num">7</span>Settings<span class="desc">Dropdown lists, password</span></button>
-      <button class="home-btn" onclick="window.print()"><span class="num">8</span>Print<span class="desc">Print current view</span></button>
+      <button class="home-btn" onclick="showScreen('print')"><span class="num">8</span>Print<span class="desc">Export reports</span></button>
     </div>
   </div>
 
@@ -262,10 +294,10 @@
     <div id="itemAccList" class="card" style="display:none"></div>
   </div>
 
-  <!-- CALCULATION (locked) -->
+  <!-- PERFORMANCE (locked) -->
   <div id="screen-calclock" class="screen">
     <div class="lockscreen card">
-      <h2>Capital &amp; profit/loss</h2>
+      <h2>Performance</h2>
       <p style="font-size:13px;color:var(--text-2)">This section is password protected.</p>
       <input type="password" id="calcPasswordInput" placeholder="Enter password">
       <div class="actions" style="justify-content:center">
@@ -287,6 +319,7 @@
           <div class="field"><label>Model</label><select id="cp_model"></select></div>
           <div class="field"><label>Recorded selling price (₦)</label><input type="number" step="0.01" id="cp_price"></div>
         </div>
+        <div class="field"><label>Select model(s) for performance analysis</label><div id="calcPhoneModels"></div></div>
         <div class="actions"><button class="primary" type="button" onclick="savePhonePrice()">Save price</button></div>
       </div>
       <div id="calcAccPriceForm" style="display:none">
@@ -295,12 +328,13 @@
           <div class="field"><label>Model</label><select id="ca_model"></select></div>
           <div class="field"><label>Recorded selling price (₦)</label><input type="number" step="0.01" id="ca_price"></div>
         </div>
+        <div class="field"><label>Select accessory type(s) for performance analysis</label><div id="calcAccTypes"></div></div>
         <div class="actions"><button class="primary" type="button" onclick="saveAccPrice()">Save price</button></div>
       </div>
     </div>
 
     <div class="card">
-      <h2>Calculate profit / loss over a period</h2>
+      <h2>Performance over a period</h2>
       <div class="grid">
         <div class="field"><label>From</label><input type="date" id="calc_from"></div>
         <div class="field"><label>To</label><input type="date" id="calc_to"></div>
@@ -314,17 +348,71 @@
   <div id="screen-activity" class="screen">
     <div class="card">
       <h2>Activity overview</h2>
+      <div class="subnav">
+        <button id="activityTabCombined" class="active" onclick="setActivityTab('combined')">Combined</button>
+        <button id="activityTabSales" onclick="setActivityTab('sales')">Sales</button>
+        <button id="activityTabRepairs" onclick="setActivityTab('repairs')">Repairs</button>
+        <button id="activityTabTradeins" onclick="setActivityTab('tradeins')">Trade-ins</button>
+        <button id="activityTabAccessories" onclick="setActivityTab('accessories')">Accessories</button>
+      </div>
       <div class="grid">
         <div class="field"><label>From</label><input type="date" id="act_from"></div>
         <div class="field"><label>To</label><input type="date" id="act_to"></div>
+        <div class="field"><label>Analytics type</label><select id="act_analytics">
+          <option value="demand">Top highest demand</option>
+          <option value="medium">Medium demand</option>
+          <option value="sales">Top sales</option>
+        </select></div>
       </div>
-      <div class="actions"><button class="primary" type="button" onclick="runActivity()">Run report</button><button class="secondary" type="button" onclick="window.print()">Print report</button></div>
+      <div class="actions">
+        <button class="primary" type="button" onclick="runActivity()">Run report</button>
+        <button class="secondary" type="button" onclick="exportActivityReport()">Export XLSX</button>
+      </div>
       <div id="activityResult" style="margin-top:16px"></div>
+      <div id="activityChartWrap" style="margin-top:16px"><canvas id="activityChart"></canvas></div>
     </div>
     <div class="card">
       <h2>Full inventory (current stock)</h2>
-      <div class="actions no-print"><button class="secondary" type="button" onclick="window.print()">Print inventory</button></div>
       <div id="fullInventory"></div>
+    </div>
+  </div>
+
+  <!-- PRINT / EXPORT -->
+  <div id="screen-print" class="screen">
+    <div class="card">
+      <h2>Generate report export</h2>
+      <div class="grid">
+        <div class="field"><label>Data type</label><select id="printDataType">
+          <option value="sales">Sales</option>
+          <option value="accessories">Accessories</option>
+          <option value="repairs">Repairs</option>
+          <option value="tradeins">Trade-ins</option>
+          <option value="inventory-total">Total inventory</option>
+          <option value="inventory-available">Available inventory</option>
+        </select></div>
+        <div class="field"><label>From</label><input type="date" id="print_from"></div>
+        <div class="field"><label>To</label><input type="date" id="print_to"></div>
+        <div class="field"><label>Format</label><select id="printFormat">
+          <option value="excel">Excel</option>
+          <option value="pdf">PDF</option>
+          <option value="word">Word</option>
+        </select></div>
+      </div>
+      <div class="actions"><button class="primary" type="button" onclick="generatePrintExport()">Generate</button></div>
+      <div id="printResult" style="margin-top:16px"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS LOCK -->
+  <div id="screen-settingslock" class="screen">
+    <div class="lockscreen card">
+      <h2>Settings</h2>
+      <p style="font-size:13px;color:var(--text-2)">This section is password protected.</p>
+      <input type="password" id="settingsPasswordInput" placeholder="Enter password">
+      <div class="actions" style="justify-content:center">
+        <button class="primary" onclick="checkSettingsPassword()">Unlock</button>
+      </div>
+      <div id="settingsError" style="color:var(--danger);font-size:12px;margin-top:8px"></div>
     </div>
   </div>
 
@@ -336,11 +424,30 @@
       <div id="dropdownEditors"></div>
     </div>
     <div class="card">
+      <h2>Appearance</h2>
+      <p style="font-size:13px;color:var(--text-2)">Switch between polished light and dark themes.</p>
+      <div class="actions"><button class="secondary" type="button" id="themeToggleBtn" onclick="toggleTheme()">Switch to dark mode</button></div>
+    </div>
+    <div class="card">
+      <h2>Low-stock alerts</h2>
+      <div class="grid">
+        <div class="field"><label>Low-stock threshold</label><input type="number" min="0" id="lowStockThresholdInput"></div>
+      </div>
+      <div class="actions"><button class="primary" type="button" onclick="changeLowStockThreshold()">Update threshold</button></div>
+    </div>
+    <div class="card">
       <h2>Capital &amp; profit/loss password</h2>
       <div class="grid">
         <div class="field"><label>New password</label><input type="password" id="newCalcPassword"></div>
       </div>
       <div class="actions"><button class="primary" type="button" onclick="changeCalcPassword()">Update password</button></div>
+    </div>
+    <div class="card">
+      <h2>Settings password</h2>
+      <div class="grid">
+        <div class="field"><label>New settings password</label><input type="password" id="newSettingsPassword"></div>
+      </div>
+      <div class="actions"><button class="primary" type="button" onclick="changeSettingsPassword()">Update password</button></div>
     </div>
     <div class="card">
       <h2>Data</h2>
@@ -359,6 +466,10 @@
 </main>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8/build/index.umd.js"></script>
 <script>
 /* ---------- data layer ---------- */
 const DEFAULTS = {
@@ -372,7 +483,10 @@ const DEFAULTS = {
     technicians:["Technician 1"],
     vendors:["Direct customer"],
     repairTypes:["Screen replacement","Battery replacement","Software fix","Charging port","Camera repair"],
-    calcPassword:"admin123"
+    calcPassword:"admin123",
+    settingsPassword:"admin123",
+    theme:"light",
+    lowStockThreshold:3
   },
   sales:{phones:[],accessories:[]},
   repairs:[],
@@ -382,22 +496,46 @@ const DEFAULTS = {
 };
 
 let data = load();
+let settingsUnlocked = false;
+function deepMerge(base, incoming){
+  if(Array.isArray(base)) return Array.isArray(incoming) ? incoming.slice() : [];
+  if(base && typeof base==='object' && incoming && typeof incoming==='object'){
+    const out = {};
+    Object.keys(base).forEach(k=>{ out[k] = deepMerge(base[k], incoming[k]); });
+    Object.keys(incoming).forEach(k=>{ if(!(k in base)) out[k] = deepMerge(incoming[k], {}); });
+    return out;
+  }
+  return incoming===undefined ? base : incoming;
+}
 function load(){
   try{
     const raw = localStorage.getItem('dematrixShopData');
     if(!raw) return JSON.parse(JSON.stringify(DEFAULTS));
     const parsed = JSON.parse(raw);
-    return Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), parsed);
+    return deepMerge(JSON.parse(JSON.stringify(DEFAULTS)), parsed);
   }catch(e){ return JSON.parse(JSON.stringify(DEFAULTS)); }
 }
 function save(skipCloud){
   localStorage.setItem('dematrixShopData', JSON.stringify(data));
+  renderLowStockNotifications();
   if(!skipCloud && window.cloudSave) window.cloudSave(data);
+}
+function applyTheme(){
+  const theme = (data.settings && data.settings.theme) || 'light';
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.textContent = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+}
+function toggleTheme(){
+  data.settings.theme = data.settings.theme === 'dark' ? 'light' : 'dark';
+  save(); applyTheme();
 }
 // Called by the Firebase module script when new data arrives from another device
 window.applyCloudData = function(remote){
-  data = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), remote);
+  data = deepMerge(JSON.parse(JSON.stringify(DEFAULTS)), remote);
   save(true);
+  applyTheme();
+  populateSettingsControls();
   refreshAllDropdowns();
   refreshCurrentScreen();
 };
@@ -409,8 +547,10 @@ function refreshCurrentScreen(){
   if(name==='repair') refreshRepairList();
   if(name==='tradein') refreshTradeinList();
   if(name==='itemedit') refreshItemLists();
-  if(name==='settings') renderDropdownEditors();
+  if(name==='settings'){ renderDropdownEditors(); populateSettingsControls(); }
+  if(name==='home') renderHomeSearchResults();
   if(name==='activity'){ /* leave report as-is until user re-runs it */ }
+  renderLowStockNotifications();
 }
 function doLogin(){
   const email = document.getElementById('login_email').value.trim();
@@ -431,13 +571,18 @@ const titles = {
   sales:['Sales','Phone and accessory sales'],
   repair:['Repair','Jobs, status and vendors'],
   tradein:['Trade-in','Device swap records'],
-  itemedit:['Item editing','Update inventory stock'],
+  itemedit:['Inventory management','Update inventory stock'],
   calclock:['Capital & profit/loss','Locked'],
   calc:['Capital & profit/loss','Prices and profit calculation'],
   activity:['Activity data','Reports and inventory'],
-  settings:['Settings','Dropdown lists and password']
+  settingslock:['Settings','Locked'],
+  settings:['Settings','Dropdown lists, password and appearance']
 };
 function showScreen(name){
+  if(name !== 'settings' && name !== 'settingslock') settingsUnlocked = false;
+  if(name==='settings' && !settingsUnlocked){
+    name = 'settingslock';
+  }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   document.getElementById('backBtn').style.display = name==='home' ? 'none' : 'inline-block';
@@ -447,8 +592,10 @@ function showScreen(name){
   if(name==='repair') refreshRepairList();
   if(name==='tradein') refreshTradeinList();
   if(name==='itemedit') refreshItemLists();
-  if(name==='settings') renderDropdownEditors();
+  if(name==='settings'){ renderDropdownEditors(); populateSettingsControls(); }
   if(name==='calc') refreshCalcDropdowns();
+  if(name==='home') renderHomeSearchResults();
+  renderLowStockNotifications();
 }
 function goHome(){ showScreen('home'); }
 
@@ -477,6 +624,7 @@ function refreshCalcDropdowns(){
   fillSelect('cp_model', data.settings.models);
   fillSelect('ca_type', data.settings.accessoryTypes);
   fillSelect('ca_model', data.settings.models);
+  renderPerformanceSelectors();
 }
 
 /* ---------- SALES ---------- */
@@ -515,7 +663,7 @@ function refreshSalesLists(){
   pw.innerHTML = '<h2>Recent phone sales</h2>' + (rows.length? tableHtml(
     ['Date','Client','Brand/model','Storage','Serial','Payment','Sales person','Amount',''],
     rows.map(r=>[r.date,r.client,`${r.brand} ${r.model}`,r.storage,r.serial,r.payment,r.salesperson,fmt(r.amount),
-      `<button class="danger-btn" onclick="delRecord('sales.phones','${r.id}')">Delete</button>`])
+      `<div style="display:flex;gap:6px"><button class="danger-btn" onclick="delRecord('sales.phones','${r.id}')">Delete</button><button class="secondary" onclick="exportSingleRows('phone-sales','${r.id}')">Export</button></div>`])
   ) : '<div class="empty">No phone sales recorded yet.</div>');
 
   const aw = document.getElementById('salesAccList');
@@ -523,7 +671,7 @@ function refreshSalesLists(){
   aw.innerHTML = '<h2>Recent accessory sales</h2>' + (arows.length? tableHtml(
     ['Date','Type','Model','Sales person','Amount',''],
     arows.map(r=>[r.date,r.type,r.model,r.salesperson,fmt(r.amount),
-      `<button class="danger-btn" onclick="delRecord('sales.accessories','${r.id}')">Delete</button>`])
+      `<div style="display:flex;gap:6px"><button class="danger-btn" onclick="delRecord('sales.accessories','${r.id}')">Delete</button><button class="secondary" onclick="exportSingleRows('accessory-sales','${r.id}')">Export</button></div>`])
   ) : '<div class="empty">No accessory sales recorded yet.</div>');
 }
 
@@ -553,7 +701,7 @@ function refreshRepairList(){
   document.getElementById('repairList').innerHTML = rows.length ? tableHtml(
     ['Date','Type','Model','Serial','Vendor','Technician','Amount','Job status','Payment',''],
     rows.map(r=>[r.date,r.type,r.model,r.serial,r.vendor||'—',r.tech,fmt(r.amount),badge(r.status),badge(r.payment),
-      `<button class="danger-btn" onclick="delRecord('repairs','${r.id}')">Delete</button>`])
+      `<div style="display:flex;gap:6px"><button class="danger-btn" onclick="delRecord('repairs','${r.id}')">Delete</button><button class="secondary" onclick="exportSingleRows('repairs','${r.id}')">Export</button></div>`])
   ) : '<div class="empty">No repair jobs match this filter.</div>';
 }
 
@@ -577,7 +725,7 @@ function refreshTradeinList(){
   document.getElementById('tradeinList').innerHTML = '<h2>Recent trade-ins</h2>' + (rows.length? tableHtml(
     ['Date','Client','In','Out','Trade-in value','Amount added','Sales person',''],
     rows.map(r=>[r.date,r.client,`${r.brandIn} ${r.modelIn} (${r.storageIn})`,`${r.brandOut} ${r.modelOut} (${r.storageOut})`,fmt(r.value),fmt(r.added),r.salesperson,
-      `<button class="danger-btn" onclick="delRecord('tradeins','${r.id}')">Delete</button>`])
+      `<div style="display:flex;gap:6px"><button class="danger-btn" onclick="delRecord('tradeins','${r.id}')">Delete</button><button class="secondary" onclick="exportSingleRows('tradeins','${r.id}')">Export</button></div>`])
   ) : '<div class="empty">No trade-ins recorded yet.</div>');
 }
 
@@ -624,19 +772,30 @@ function refreshItemLists(){
       ['Date added','Brand','Model','Storage','Serial','Status',''],
       phones.slice().reverse().map(p=>[p.date,p.brand,p.model,p.storage,p.serial,
         `<span class="badge ${p.status==='sold'?'danger':'success'}">${p.status==='sold'?'Sold':'In stock'}</span>`,
-        `<button class="danger-btn" onclick="delInventoryPhone('${p.id}')">Remove</button>`])
+        `<div style="display:flex;gap:6px"><button class="danger-btn" onclick="delInventoryPhone('${p.id}')">Remove</button><button class="secondary" onclick="exportSingleRows('inventory-phone','${p.id}')">Export</button></div>`])
     ) : '<div class="empty">No phones in inventory yet.</div>');
 
   const accs = data.inventory.accessories;
-  document.getElementById('itemAccList').innerHTML = '<h2>Accessory inventory</h2>' + (accs.length? tableHtml(
-    ['Type','Quantity remaining',''],
-    accs.map(a=>[a.type,a.qty,`<button class="danger-btn" onclick="delInventoryAcc('${a.type}')">Remove</button>`])
-  ) : '<div class="empty">No accessory stock recorded yet.</div>');
+  const accInStock = accs.reduce((sum,a)=>sum + Number(a.qty||0),0);
+  const accSold = data.sales.accessories.length;
+  const accTotalAdded = accInStock + accSold;
+  document.getElementById('itemAccList').innerHTML = `
+    <h2>Accessory inventory</h2>
+    <div class="stat-grid">
+      <div class="stat"><div class="label">Sold</div><div class="value">${accSold}</div></div>
+      <div class="stat"><div class="label">In stock</div><div class="value">${accInStock}</div></div>
+      <div class="stat"><div class="label">Total added</div><div class="value">${accTotalAdded}</div></div>
+    </div>` + (accs.length? tableHtml(
+      ['Type','Quantity remaining',''],
+      accs.map(a=>[a.type,a.qty,`<div style="display:flex;gap:6px"><button class="danger-btn" onclick="delInventoryAcc('${a.type}')">Remove</button><button class="secondary" onclick="exportSingleRows('inventory-accessory','${a.type}')">Export</button></div>`])
+    ) : '<div class="empty">No accessory stock recorded yet.</div>');
 }
 function delInventoryPhone(id){ data.inventory.phones = data.inventory.phones.filter(p=>p.id!==id); save(); refreshItemLists(); }
 function delInventoryAcc(type){ data.inventory.accessories = data.inventory.accessories.filter(a=>a.type!==type); save(); refreshItemLists(); }
 
 /* ---------- CALCULATION (password protected) ---------- */
+let activityTab = 'combined';
+let activityChart = null;
 function openCalc(){
   document.getElementById('calcError').textContent='';
   document.getElementById('calcPasswordInput').value='';
@@ -652,6 +811,12 @@ function setCalcTab(tab){
   document.getElementById('calcPhonePriceForm').style.display = tab==='phone'?'block':'none';
   document.getElementById('calcAccPriceForm').style.display = tab==='acc'?'block':'none';
 }
+function renderPerformanceSelectors(){
+  const phoneModels = data.settings.models || [];
+  const accTypes = data.settings.accessoryTypes || [];
+  document.getElementById('calcPhoneModels').innerHTML = phoneModels.map(model=>`<label style="display:inline-flex;align-items:center;gap:6px;margin-right:10px"><input type="checkbox" value="${model}" checked> ${model}</label>`).join('');
+  document.getElementById('calcAccTypes').innerHTML = accTypes.map(type=>`<label style="display:inline-flex;align-items:center;gap:6px;margin-right:10px"><input type="checkbox" value="${type}" checked> ${type}</label>`).join('');
+}
 function savePhonePrice(){
   if(!cp_model.value) return;
   data.prices.phones[cp_model.value] = parseFloat(cp_price.value||0);
@@ -663,17 +828,25 @@ function saveAccPrice(){
   data.prices.accessories[key] = parseFloat(ca_price.value||0);
   save(); alert('Price saved for '+ca_type.value+' / '+ca_model.value);
 }
+function getSelectedPerformanceModels(){
+  return Array.from(document.querySelectorAll('#calcPhoneModels input:checked')).map(el=>el.value);
+}
+function getSelectedPerformanceTypes(){
+  return Array.from(document.querySelectorAll('#calcAccTypes input:checked')).map(el=>el.value);
+}
 function runProfitCalc(){
   const from = calc_from.value, to = calc_to.value;
   const inRange = d => (!from || d>=from) && (!to || d<=to);
+  const selectedModels = getSelectedPerformanceModels();
+  const selectedTypes = getSelectedPerformanceTypes();
   let rows = [], totalProfit = 0;
-  data.sales.phones.filter(s=>inRange(s.date)).forEach(s=>{
+  data.sales.phones.filter(s=>inRange(s.date) && selectedModels.includes(s.model)).forEach(s=>{
     const recorded = data.prices.phones[s.model];
     const profit = recorded!==undefined ? (s.amount - recorded) : null;
     if(profit!==null) totalProfit += profit;
     rows.push(['Phone',s.date,`${s.brand} ${s.model}`, recorded!==undefined?fmt(recorded):'not set', fmt(s.amount), profit!==null?fmt(profit):'—']);
   });
-  data.sales.accessories.filter(s=>inRange(s.date)).forEach(s=>{
+  data.sales.accessories.filter(s=>inRange(s.date) && selectedTypes.includes(s.type)).forEach(s=>{
     const key = s.type+'|'+s.model;
     const recorded = data.prices.accessories[key];
     const profit = recorded!==undefined ? (s.amount - recorded) : null;
@@ -682,48 +855,97 @@ function runProfitCalc(){
   });
   document.getElementById('calcResult').innerHTML = `
     <div class="stat-grid"><div class="stat"><div class="label">Total profit / loss in period</div><div class="value">${fmt(totalProfit)}</div></div></div>
-    ${rows.length? tableHtml(['Category','Date','Item','Recorded price','Sold amount','Profit/loss'], rows) : '<div class="empty">No sales in this period.</div>'}
+    ${rows.length? tableHtml(['Category','Date','Item','Recorded price','Sold amount','Profit/loss'], rows) : '<div class="empty">No matching sales in this period.</div>'}
   `;
 }
 
 /* ---------- ACTIVITY DATA ---------- */
-function runActivity(){
+function setActivityTab(tab){
+  activityTab = tab;
+  document.querySelectorAll('#screen-activity .subnav button').forEach(btn=>btn.classList.toggle('active', btn.id===`activityTab${tab.charAt(0).toUpperCase()+tab.slice(1)}`));
+  runActivity();
+}
+function getActivityRecords(tab){
   const from = act_from.value, to = act_to.value;
   const inRange = d => (!from || d>=from) && (!to || d<=to);
-  const phoneSales = data.sales.phones.filter(s=>inRange(s.date));
-  const accSales = data.sales.accessories.filter(s=>inRange(s.date));
-  const repairs = data.repairs.filter(r=>inRange(r.date));
-  const tradeins = data.tradeins.filter(t=>inRange(t.date));
-
-  const phoneTotal = phoneSales.reduce((a,s)=>a+s.amount,0);
-  const accTotal = accSales.reduce((a,s)=>a+s.amount,0);
-  const repairTotal = repairs.reduce((a,r)=>a+r.amount,0);
-
-  const modelCounts = {};
-  phoneSales.forEach(s=>{ modelCounts[s.model]=(modelCounts[s.model]||0)+1; });
-  const ranked = Object.entries(modelCounts).sort((a,b)=>b[1]-a[1]);
-  const top = ranked.slice(0,5).map(([m,c])=>`${m} (${c})`).join(', ') || '—';
-  const bottom = ranked.slice(-5).map(([m,c])=>`${m} (${c})`).join(', ') || '—';
-
+  switch(tab){
+    case 'sales': return {title:'Sales', records:data.sales.phones.filter(s=>inRange(s.date)), headers:['Date','Client','Brand','Model','Storage','Serial','Payment','Sales person','Amount']};
+    case 'repairs': return {title:'Repairs', records:data.repairs.filter(r=>inRange(r.date)), headers:['Date','Type','Model','Serial','Vendor','Technician','Amount','Status','Payment']};
+    case 'tradeins': return {title:'Trade-ins', records:data.tradeins.filter(t=>inRange(t.date)), headers:['Date','Client','In','Out','Trade-in value','Amount added','Sales person']};
+    case 'accessories': return {title:'Accessories', records:data.sales.accessories.filter(s=>inRange(s.date)), headers:['Date','Type','Model','Sales person','Amount']};
+    default: return {title:'Combined', records:[...data.sales.phones.filter(s=>inRange(s.date)).map(s=>({...s, category:'Sale'})), ...data.repairs.filter(r=>inRange(r.date)).map(r=>({...r, category:'Repair'})), ...data.tradeins.filter(t=>inRange(t.date)).map(t=>({...t, category:'Trade-in'})), ...data.sales.accessories.filter(s=>inRange(s.date)).map(s=>({...s, category:'Accessory'}))], headers:['Category','Date','Item','Amount']};
+  }
+}
+function buildActivityAnalytics(tab){
+  const { records } = getActivityRecords(tab);
+  const analyticsType = document.getElementById('act_analytics').value;
+  let items = [];
+  if(tab==='sales'){
+    const map = {};
+    records.forEach(r=>{ const key = `${r.brand} ${r.model}`; map[key]=(map[key]||{label:key,count:0,revenue:0}); map[key].count+=1; map[key].revenue+=Number(r.amount||0); });
+    items = Object.values(map);
+  } else if(tab==='repairs'){
+    const map = {};
+    records.forEach(r=>{ const key = `${r.type} / ${r.model}`; map[key]=(map[key]||{label:key,count:0,revenue:0}); map[key].count+=1; map[key].revenue+=Number(r.amount||0); });
+    items = Object.values(map);
+  } else if(tab==='tradeins'){
+    const map = {};
+    records.forEach(r=>{ const key = `${r.brandIn} ${r.modelIn}`; map[key]=(map[key]||{label:key,count:0,revenue:0}); map[key].count+=1; map[key].revenue+=Number(r.value||0)+Number(r.added||0); });
+    items = Object.values(map);
+  } else if(tab==='accessories'){
+    const map = {};
+    records.forEach(r=>{ const key = `${r.type} ${r.model}`; map[key]=(map[key]||{label:key,count:0,revenue:0}); map[key].count+=1; map[key].revenue+=Number(r.amount||0); });
+    items = Object.values(map);
+  } else {
+    const map = {};
+    records.forEach(r=>{ const category = r.category || 'Record'; const label = category; map[label]=(map[label]||{label,count:0,revenue:0}); map[label].count+=1; map[label].revenue+=Number(r.amount||r.value||r.added||0); });
+    items = Object.values(map);
+  }
+  if(analyticsType==='sales') items.sort((a,b)=>b.revenue-a.revenue); else if(analyticsType==='medium'){ const sorted = [...items].sort((a,b)=>b.count-a.count); const start = Math.floor(sorted.length/3); const end = Math.max(start+1, Math.ceil((sorted.length*2)/3)); items = sorted.slice(start,end); } else { items.sort((a,b)=>b.count-a.count); }
+  return items.slice(0,8);
+}
+function renderActivityChart(items){
+  const ctx = document.getElementById('activityChart');
+  if(!ctx) return;
+  const labels = items.map(i=>i.label);
+  const values = items.map(i=>document.getElementById('act_analytics').value==='sales' ? i.revenue : i.count);
+  if(activityChart) activityChart.destroy();
+  activityChart = new Chart(ctx, { type:'bar', data:{ labels, datasets:[{ label: document.getElementById('act_analytics').value==='sales' ? 'Revenue' : 'Count', data:values, backgroundColor:['#4f46e5','#0ea5a4','#f59e0b','#ef4444','#22c55e','#8b5cf6','#06b6d4','#f43f5e'] }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:{ beginAtZero:true } } } });
+}
+function runActivity(){
+  const from = act_from.value, to = act_to.value;
+  const { records, title, headers } = getActivityRecords(activityTab);
+  const stats = [];
+  if(activityTab==='sales'){ stats.push(['Phone sales', records.length]); stats.push(['Revenue', fmt(records.reduce((a,s)=>a+Number(s.amount||0),0))]); }
+  else if(activityTab==='repairs'){ stats.push(['Repair jobs', records.length]); stats.push(['Revenue', fmt(records.reduce((a,r)=>a+Number(r.amount||0),0))]); }
+  else if(activityTab==='tradeins'){ stats.push(['Trade-ins', records.length]); stats.push(['Value', fmt(records.reduce((a,t)=>a+Number(t.value||0),0))]); }
+  else if(activityTab==='accessories'){ stats.push(['Accessory sales', records.length]); stats.push(['Revenue', fmt(records.reduce((a,s)=>a+Number(s.amount||0),0))]); }
+  else { stats.push(['Combined records', records.length]); stats.push(['Revenue', fmt(records.reduce((a,r)=>a+Number(r.amount||r.value||r.added||0),0))]); }
+  const analyticsItems = buildActivityAnalytics(activityTab);
+  const analyticsLabel = document.getElementById('act_analytics').value==='sales' ? 'Revenue' : 'Count';
   document.getElementById('activityResult').innerHTML = `
     <div class="stat-grid">
-      <div class="stat"><div class="label">Phone sales</div><div class="value">${phoneSales.length}</div></div>
-      <div class="stat"><div class="label">Accessory sales</div><div class="value">${accSales.length}</div></div>
-      <div class="stat"><div class="label">Repair jobs</div><div class="value">${repairs.length}</div></div>
-      <div class="stat"><div class="label">Trade-ins</div><div class="value">${tradeins.length}</div></div>
-      <div class="stat"><div class="label">Phone sales revenue</div><div class="value">${fmt(phoneTotal)}</div></div>
-      <div class="stat"><div class="label">Accessory revenue</div><div class="value">${fmt(accTotal)}</div></div>
-      <div class="stat"><div class="label">Repair revenue</div><div class="value">${fmt(repairTotal)}</div></div>
+      ${stats.map(([label,value])=>`<div class="stat"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('')}
     </div>
-    <p style="font-size:13px"><strong>Best-selling models:</strong> ${top}</p>
-    <p style="font-size:13px"><strong>Slowest-selling models:</strong> ${bottom}</p>
+    <p style="font-size:13px"><strong>${title} analytics:</strong> ${analyticsItems.length ? analyticsItems.map(i=>`${i.label} (${analyticsLabel === 'Revenue' ? fmt(i.revenue) : i.count})`).join(', ') : 'No data'}</p>
+    ${records.length ? tableHtml(headers, activityTab==='combined' ? records.map(r=>[r.category||'Record', r.date||'', r.brand?`${r.brand} ${r.model}`:r.type?`${r.type} ${r.model}`:r.serialIn?`${r.serialIn} → ${r.serialOut}`:r.serial||'', fmt(r.amount||r.value||r.added||0)]) : activityTab==='sales' ? records.map(r=>[r.date,r.client,r.brand,r.model,r.storage,r.serial,r.payment,r.salesperson,fmt(r.amount)]) : activityTab==='repairs' ? records.map(r=>[r.date,r.type,r.model,r.serial,r.vendor||'—',r.tech,fmt(r.amount),r.status,r.payment]) : activityTab==='tradeins' ? records.map(r=>[r.date,r.client,`${r.brandIn} ${r.modelIn} (${r.storageIn})`,`${r.brandOut} ${r.modelOut} (${r.storageOut})`,fmt(r.value),fmt(r.added),r.salesperson]) : records.map(r=>[r.date,r.type,r.model,r.salesperson,fmt(r.amount)])) : '<div class="empty">No records in this range.</div>'}
   `;
-
+  renderActivityChart(analyticsItems);
   const invRows = data.inventory.phones.filter(p=>p.status!=='sold');
   document.getElementById('fullInventory').innerHTML = invRows.length ? tableHtml(
     ['Brand','Model','Storage','Serial','Date added'],
     invRows.map(p=>[p.brand,p.model,p.storage,p.serial,p.date])
   ) : '<div class="empty">No phones currently in stock.</div>';
+}
+function exportActivityReport(){
+  const { records, headers } = getActivityRecords(activityTab);
+  let rows = [];
+  if(activityTab==='sales') rows = records.map(r=>[r.date,r.client,r.brand,r.model,r.storage,r.serial,r.payment,r.salesperson,r.amount]);
+  else if(activityTab==='repairs') rows = records.map(r=>[r.date,r.type,r.model,r.serial,r.vendor||'',r.tech,r.amount,r.status,r.payment]);
+  else if(activityTab==='tradeins') rows = records.map(r=>[r.date,r.client,`${r.brandIn} ${r.modelIn} (${r.storageIn})`,`${r.brandOut} ${r.modelOut} (${r.storageOut})`,r.value,r.added,r.salesperson]);
+  else if(activityTab==='accessories') rows = records.map(r=>[r.date,r.type,r.model,r.salesperson,r.amount]);
+  else rows = records.map(r=>[r.category||'Record',r.date||'',r.brand?`${r.brand} ${r.model}`:r.type?`${r.type} ${r.model}`:r.serialIn?`${r.serialIn} → ${r.serialOut}`:r.serial||'',r.amount||r.value||r.added||0]);
+  exportRowsToExcel(`activity-${activityTab}`, activityTab==='combined' ? ['Category','Date','Item','Amount'] : headers, rows);
 }
 
 /* ---------- SETTINGS ---------- */
@@ -767,12 +989,158 @@ function changeCalcPassword(){
   document.getElementById('newCalcPassword').value='';
   alert('Password updated.');
 }
+function changeSettingsPassword(){
+  const v = document.getElementById('newSettingsPassword').value.trim();
+  if(!v){ alert('Enter a new settings password first.'); return; }
+  data.settings.settingsPassword = v; save();
+  document.getElementById('newSettingsPassword').value='';
+  alert('Settings password updated.');
+}
+function populateSettingsControls(){
+  const input = document.getElementById('lowStockThresholdInput');
+  if(input) input.value = data.settings.lowStockThreshold ?? 3;
+}
+function changeLowStockThreshold(){
+  const input = document.getElementById('lowStockThresholdInput');
+  if(!input) return;
+  const value = Number(input.value);
+  if(Number.isNaN(value) || value < 0){ alert('Enter a valid threshold.'); return; }
+  data.settings.lowStockThreshold = value;
+  save();
+  renderLowStockNotifications();
+  alert('Low-stock threshold updated.');
+}
+function getLowStockItems(){
+  const threshold = Number(data.settings.lowStockThreshold ?? 3);
+  const low = [];
+  data.inventory.accessories.forEach(item=>{
+    const qty = Number(item.qty || 0);
+    if(qty < threshold){ low.push({type:'Accessory', name:item.type, count:qty}); }
+  });
+  const phoneCounts = {};
+  data.inventory.phones.filter(p=>p.status!=='sold').forEach(p=>{
+    const key = `${p.brand} ${p.model}`;
+    phoneCounts[key] = (phoneCounts[key] || 0) + 1;
+  });
+  Object.entries(phoneCounts).forEach(([name,count])=>{ if(count < threshold) low.push({type:'Phone', name, count}); });
+  return low;
+}
+function renderLowStockNotifications(){
+  const badge = document.getElementById('notifBadge');
+  const panel = document.getElementById('notifPanel');
+  if(!badge || !panel) return;
+  const items = getLowStockItems();
+  badge.textContent = items.length;
+  badge.style.display = items.length ? 'inline-flex' : 'none';
+  panel.innerHTML = items.length ? items.map(item=>`<div class="notif-item"><strong>${item.name}</strong><div style="font-size:12px;color:var(--text-muted)">${item.type} • ${item.count} available</div></div>`).join('') : '<div class="notif-empty">No low-stock items.</div>';
+}
+function toggleNotifications(){
+  const panel = document.getElementById('notifPanel');
+  if(!panel) return;
+  panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+}
+function openSettings(){
+  settingsUnlocked = false;
+  document.getElementById('settingsError').textContent='';
+  document.getElementById('settingsPasswordInput').value='';
+  showScreen('settingslock');
+}
+function checkSettingsPassword(){
+  if(settingsPasswordInput.value === data.settings.settingsPassword){ settingsUnlocked = true; showScreen('settings'); }
+  else { document.getElementById('settingsError').textContent = 'Incorrect password.'; }
+}
+function renderHomeSearchResults(){
+  const input = document.getElementById('homeSearchInput');
+  const el = document.getElementById('homeSearchResults');
+  if(!input || !el) return;
+  const q = input.value.trim().toLowerCase();
+  if(!q){ el.innerHTML = '<div class="empty">Search by serial or IMEI to find related sales, repairs, trade-ins, or inventory entries.</div>'; return; }
+
+  const groups = [];
+  const addGroup = (title, items)=>{ if(items.length) groups.push({title, items}); };
+
+  const saleItems = data.sales.phones.filter(s=>String(s.serial||'').toLowerCase().includes(q)).map(s=>({
+    title:`${s.brand} ${s.model}`,
+    meta:`Client: ${s.client} • ${s.date}`,
+    pill:fmt(s.amount)
+  }));
+  const repairItems = data.repairs.filter(r=>String(r.serial||'').toLowerCase().includes(q)).map(r=>({
+    title:`${r.type} • ${r.model}`,
+    meta:`Status: ${r.status} • Tech: ${r.tech}`,
+    pill:r.serial
+  }));
+  const tradeItems = data.tradeins.filter(t=>String(t.serialIn||'').toLowerCase().includes(q) || String(t.serialOut||'').toLowerCase().includes(q)).map(t=>({
+    title:`In ${t.brandIn} ${t.modelIn} → Out ${t.brandOut} ${t.modelOut}`,
+    meta:`IN: ${t.serialIn} • OUT: ${t.serialOut}`,
+    pill:fmt(t.value)
+  }));
+  const inventoryItems = data.inventory.phones.filter(p=>String(p.serial||'').toLowerCase().includes(q)).map(p=>({
+    title:`${p.brand} ${p.model} • ${p.storage}`,
+    meta:`Date: ${p.date} • Status: ${p.status}`,
+    pill:p.serial
+  }));
+
+  addGroup('Sale', saleItems);
+  addGroup('Repair', repairItems);
+  addGroup('Trade-in', tradeItems);
+  addGroup('Inventory', inventoryItems);
+
+  if(!groups.length){ el.innerHTML = '<div class="empty">No matching serial or IMEI found.</div>'; return; }
+  el.innerHTML = groups.map(group=>`
+    <div class="search-result-group">
+      <h3>${group.title}</h3>
+      ${group.items.map(item=>`
+        <div class="search-result-item">
+          <div>
+            <strong>${item.title}</strong>
+            <div class="search-result-meta">${item.meta}</div>
+          </div>
+          <span class="pill">${item.pill}</span>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
 function exportData(){
   const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'dematrix-shop-backup-'+new Date().toISOString().slice(0,10)+'.json';
   a.click();
+}
+function exportRowsToExcel(fileName, headers, rows){
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+  XLSX.writeFile(wb, `${fileName}-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+function exportSingleRows(type, id){
+  let rows = [];
+  let headers = [];
+  if(type==='phone-sales'){ const rec = data.sales.phones.find(r=>r.id===id); if(rec){ headers=['Date','Client','Brand','Model','Storage','Serial','Payment','Sales person','Amount']; rows=[[rec.date,rec.client,rec.brand,rec.model,rec.storage,rec.serial,rec.payment,rec.salesperson,rec.amount]]; }}
+  else if(type==='accessory-sales'){ const rec = data.sales.accessories.find(r=>r.id===id); if(rec){ headers=['Date','Type','Model','Sales person','Amount']; rows=[[rec.date,rec.type,rec.model,rec.salesperson,rec.amount]]; }}
+  else if(type==='repairs'){ const rec = data.repairs.find(r=>r.id===id); if(rec){ headers=['Date','Type','Model','Serial','Vendor','Technician','Amount','Status','Payment']; rows=[[rec.date,rec.type,rec.model,rec.serial,rec.vendor||'',rec.tech,rec.amount,rec.status,rec.payment]]; }}
+  else if(type==='tradeins'){ const rec = data.tradeins.find(r=>r.id===id); if(rec){ headers=['Date','Client','In','Out','Trade-in value','Amount added','Sales person']; rows=[[rec.date,rec.client,`${rec.brandIn} ${rec.modelIn} (${rec.storageIn})`,`${rec.brandOut} ${rec.modelOut} (${rec.storageOut})`,rec.value,rec.added,rec.salesperson]]; }}
+  else if(type==='inventory-phone'){ const rec = data.inventory.phones.find(r=>r.id===id); if(rec){ headers=['Date added','Brand','Model','Storage','Serial','Status']; rows=[[rec.date,rec.brand,rec.model,rec.storage,rec.serial,rec.status]]; }}
+  else if(type==='inventory-accessory'){ const rec = data.inventory.accessories.find(r=>r.type===id); if(rec){ headers=['Type','Quantity remaining']; rows=[[rec.type,rec.qty]]; }}
+  if(headers.length) exportRowsToExcel(`export-${type}`, headers, rows);
+}
+function generatePrintExport(){
+  const type = document.getElementById('printDataType').value;
+  const from = print_from.value;
+  const to = print_to.value;
+  const format = document.getElementById('printFormat').value;
+  const inRange = d => (!from || d>=from) && (!to || d<=to);
+  let rows = []; let headers = []; let title = 'Report';
+  if(type==='sales'){ title='Sales'; headers=['Date','Client','Brand','Model','Storage','Serial','Payment','Sales person','Amount']; rows = data.sales.phones.filter(s=>inRange(s.date)).map(s=>[s.date,s.client,s.brand,s.model,s.storage,s.serial,s.payment,s.salesperson,s.amount]); }
+  else if(type==='accessories'){ title='Accessories'; headers=['Date','Type','Model','Sales person','Amount']; rows = data.sales.accessories.filter(s=>inRange(s.date)).map(s=>[s.date,s.type,s.model,s.salesperson,s.amount]); }
+  else if(type==='repairs'){ title='Repairs'; headers=['Date','Type','Model','Serial','Vendor','Technician','Amount','Status','Payment']; rows = data.repairs.filter(r=>inRange(r.date)).map(r=>[r.date,r.type,r.model,r.serial,r.vendor||'',r.tech,r.amount,r.status,r.payment]); }
+  else if(type==='tradeins'){ title='Trade-ins'; headers=['Date','Client','In','Out','Trade-in value','Amount added','Sales person']; rows = data.tradeins.filter(t=>inRange(t.date)).map(t=>[t.date,t.client,`${t.brandIn} ${t.modelIn} (${t.storageIn})`,`${t.brandOut} ${t.modelOut} (${t.storageOut})`,t.value,t.added,t.salesperson]); }
+  else if(type==='inventory-total'){ title='Total inventory'; headers=['Brand','Model','Storage','Serial','Status']; rows = data.inventory.phones.map(p=>[p.brand,p.model,p.storage,p.serial,p.status]); }
+  else if(type==='inventory-available'){ title='Available inventory'; headers=['Brand','Model','Storage','Serial','Status']; rows = data.inventory.phones.filter(p=>p.status!=='sold').map(p=>[p.brand,p.model,p.storage,p.serial,p.status]); }
+  if(format==='excel'){ exportRowsToExcel(`print-${type}`, headers, rows); document.getElementById('printResult').innerHTML = '<div class="empty">Excel export created.</div>'; }
+  else if(format==='pdf'){ const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.text(`${title} report`, 14, 16); let y = 24; rows.slice(0,20).forEach(row=>{ doc.text(row.join(' | '), 14, y); y+=8; }); doc.save(`${title}.pdf`); document.getElementById('printResult').innerHTML = '<div class="empty">PDF export created.</div>'; }
+  else if(format==='word'){ const { Document, Packer, Paragraph, Table, TableCell, TableRow } = window.docx; const rowsToCells = rows.slice(0,25).map(row=>new TableRow({ children: row.map(cell=>new TableCell({ children:[new Paragraph(String(cell))] })) })); const doc = new Document({ sections:[{ properties:{}, children:[new Paragraph(title), new Table({ rows:[new TableRow({ children: headers.map(h=>new TableCell({ children:[new Paragraph(h)] })) }), ...rowsToCells] })] }] }); Packer.toBlob(doc).then(blob=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${title}.docx`; a.click(); }); document.getElementById('printResult').innerHTML = '<div class="empty">Word export created.</div>'; }
 }
 function importData(e){
   const file = e.target.files[0];
@@ -808,12 +1176,29 @@ function delRecord(path, id){
 
 /* ---------- init ---------- */
 refreshAllDropdowns();
+applyTheme();
+populateSettingsControls();
+renderHomeSearchResults();
+renderLowStockNotifications();
 document.getElementById('ps_date').valueAsDate = new Date();
 document.getElementById('as_date').valueAsDate = new Date();
 document.getElementById('rp_date').valueAsDate = new Date();
 document.getElementById('ti_date').valueAsDate = new Date();
 document.getElementById('is_date').valueAsDate = new Date();
 document.getElementById('ia_date').valueAsDate = new Date();
+</script>
+
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', ()=>{
+      navigator.serviceWorker.register('./sw.js').catch(err=>console.warn('Service worker registration failed', err));
+    });
+  }
+  document.addEventListener('click', (event)=>{
+    const wrap = event.target.closest('.notif-wrap');
+    const panel = document.getElementById('notifPanel');
+    if(!wrap && panel) panel.style.display = 'none';
+  });
 </script>
 
 <script type="module">
