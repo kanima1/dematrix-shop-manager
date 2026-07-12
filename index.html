@@ -86,6 +86,10 @@
   .tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
   .tag{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;display:flex;align-items:center;gap:6px}
   .tag button{background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0}
+  .multiselect-wrap{position:relative}
+  .multiselect-button{width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center}
+  .multiselect-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;box-shadow:0 10px 24px rgba(15,23,42,.12);z-index:15;display:none;max-height:220px;overflow:auto}
+  .multiselect-menu label{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:400}
   .account-wrap{position:relative}
   .account-btn{background:var(--card);border:1px solid var(--border-strong);border-radius:999px;padding:8px 10px;cursor:pointer;font-size:16px}
   .account-panel{position:absolute;right:0;top:46px;width:260px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.12);padding:12px;z-index:20;display:none}
@@ -348,7 +352,12 @@
           <div class="field"><label>Model</label><select id="cp_model"></select></div>
           <div class="field"><label>Recorded selling price (₦)</label><input type="number" step="0.01" id="cp_price"></div>
         </div>
-        <div class="field"><label>Select model(s) for performance analysis</label><div id="calcPhoneModels"></div></div>
+        <div class="field"><label>Select model(s) for performance analysis</label>
+          <div class="multiselect-wrap">
+            <button class="secondary multiselect-button" type="button" id="calcPhoneModelsButton" onclick="togglePerformanceSelector('phone')">Select models</button>
+            <div class="multiselect-menu" id="calcPhoneModelsMenu"></div>
+          </div>
+        </div>
         <div class="actions"><button class="primary" type="button" onclick="savePhonePrice()">Save price</button></div>
       </div>
       <div id="calcAccPriceForm" style="display:none">
@@ -357,7 +366,12 @@
           <div class="field"><label>Model</label><select id="ca_model"></select></div>
           <div class="field"><label>Recorded selling price (₦)</label><input type="number" step="0.01" id="ca_price"></div>
         </div>
-        <div class="field"><label>Select accessory type(s) for performance analysis</label><div id="calcAccTypes"></div></div>
+        <div class="field"><label>Select accessory type(s) for performance analysis</label>
+          <div class="multiselect-wrap">
+            <button class="secondary multiselect-button" type="button" id="calcAccTypesButton" onclick="togglePerformanceSelector('acc')">Select types</button>
+            <div class="multiselect-menu" id="calcAccTypesMenu"></div>
+          </div>
+        </div>
         <div class="actions"><button class="primary" type="button" onclick="saveAccPrice()">Save price</button></div>
       </div>
     </div>
@@ -383,6 +397,7 @@
         <button id="activityTabRepairs" onclick="setActivityTab('repairs')">Repairs</button>
         <button id="activityTabTradeins" onclick="setActivityTab('tradeins')">Trade-ins</button>
         <button id="activityTabAccessories" onclick="setActivityTab('accessories')">Accessories</button>
+        <button id="activityTabLogin" onclick="setActivityTab('loginactivity')">Login activity</button>
       </div>
       <div class="grid">
         <div class="field"><label>From</label><input type="date" id="act_from"></div>
@@ -456,7 +471,28 @@
         <h2 style="margin:0">Management settings</h2>
         <button class="secondary" type="button" id="managementToggleBtn" onclick="toggleManagementSettings()">Show</button>
       </div>
+      <div id="managementLockScreen" class="lockscreen card" style="display:none;margin:16px 0 0">
+        <h2>Management settings</h2>
+        <p style="font-size:13px;color:var(--text-2)">Enter the management password to access these controls.</p>
+        <input type="password" id="managementPasswordInput" placeholder="Enter password">
+        <div class="actions" style="justify-content:center">
+          <button class="primary" onclick="checkManagementPassword()">Unlock</button>
+        </div>
+        <div id="managementError" style="color:var(--danger);font-size:12px;margin-top:8px"></div>
+      </div>
       <div id="managementSettingsContent" style="display:none">
+        <div class="card" style="margin:16px 0 0;padding:0;border:none;box-shadow:none">
+          <h2>Management password</h2>
+          <div class="grid">
+            <div class="field"><label>New management password</label><input type="password" id="newManagementPassword" placeholder="Leave blank to keep current"></div>
+          </div>
+          <div class="actions"><button class="primary" type="button" onclick="changeManagementPassword()">Update password</button></div>
+        </div>
+        <div class="card" style="margin:16px 0 0;padding:0;border:none;box-shadow:none">
+          <h2>Staff</h2>
+          <p style="font-size:13px;color:var(--text-2)">Link account emails to staff names and roles.</p>
+          <div id="staffDirectoryEditor"></div>
+        </div>
         <div class="card" style="margin:16px 0 0;padding:0;border:none;box-shadow:none">
           <h2>Dropdown lists</h2>
           <p style="font-size:13px;color:var(--text-2)">Add the values that should appear in each dropdown across the app.</p>
@@ -519,10 +555,13 @@ const DEFAULTS = {
     vendors:["Direct customer"],
     repairTypes:["Screen replacement","Battery replacement","Software fix","Charging port","Camera repair"],
     calcPassword:"admin123",
+    managementPassword:"admin123",
     lockCode:"1234",
     theme:"light",
-    lowStockThreshold:3
+    lowStockThreshold:3,
+    staffDirectory:[]
   },
+  activityLog:[],
   sales:{phones:[],accessories:[]},
   repairs:[],
   tradeins:[],
@@ -531,6 +570,7 @@ const DEFAULTS = {
 };
 
 let data = load();
+let managementSettingsUnlocked = false;
 function deepMerge(base, incoming){
   if(Array.isArray(base)) return Array.isArray(incoming) ? incoming.slice() : [];
   if(base && typeof base==='object' && incoming && typeof incoming==='object'){
@@ -554,11 +594,58 @@ function save(skipCloud){
   renderLowStockNotifications();
   if(!skipCloud && window.cloudSave) window.cloudSave(data);
 }
+window.save = save;
 function applyTheme(){
   const theme = (data.settings && data.settings.theme) || 'light';
   document.documentElement.setAttribute('data-theme', theme);
   const btn = document.getElementById('themeToggleBtn');
   if(btn) btn.textContent = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+}
+function getStaffDirectoryEntry(email){
+  const list = Array.isArray(data.settings?.staffDirectory) ? data.settings.staffDirectory : [];
+  const target = String(email || '').trim().toLowerCase();
+  return list.find(entry => String(entry.email || '').trim().toLowerCase() === target) || null;
+}
+window.getStaffDirectoryEntry = getStaffDirectoryEntry;
+function getStaffDirectoryNames(role){
+  const list = Array.isArray(data.settings?.staffDirectory) ? data.settings.staffDirectory : [];
+  return list.filter(entry => String(entry.role || '').toLowerCase() === String(role || '').toLowerCase()).map(entry => entry.name).filter(Boolean);
+}
+function applyStaffDirectoryDefaults(){
+  const currentEmail = window.auth?.currentUser?.email || '';
+  const entry = getStaffDirectoryEntry(currentEmail);
+  const role = entry?.role || '';
+  const salespersonSelects = ['ps_salesperson','as_salesperson','ti_salesperson'];
+  const technicianSelects = ['rp_tech'];
+  const setField = (id, value, disabled) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.disabled = disabled;
+    el.value = value || '';
+  };
+  salespersonSelects.forEach(id => setField(id, '', false));
+  technicianSelects.forEach(id => setField(id, '', false));
+  if(role === 'salesperson'){ salespersonSelects.forEach(id => setField(id, entry.name, true)); }
+  if(role === 'technician'){ technicianSelects.forEach(id => setField(id, entry.name, true)); }
+  if(role === 'manager'){ salespersonSelects.forEach(id => setField(id, '', false)); technicianSelects.forEach(id => setField(id, '', false)); }
+}
+window.applyStaffDirectoryDefaults = applyStaffDirectoryDefaults;
+function updatePerformanceSelectorSummary(type){
+  const button = document.getElementById(type==='phone'?'calcPhoneModelsButton':'calcAccTypesButton');
+  const menu = document.getElementById(type==='phone'?'calcPhoneModelsMenu':'calcAccTypesMenu');
+  if(!button || !menu) return;
+  const selected = Array.from(menu.querySelectorAll('input:checked')).length;
+  const total = menu.querySelectorAll('input').length;
+  button.textContent = total ? `${selected} of ${total} selected` : 'None selected';
+}
+function togglePerformanceSelector(type){
+  const menu = document.getElementById(type==='phone'?'calcPhoneModelsMenu':'calcAccTypesMenu');
+  const button = document.getElementById(type==='phone'?'calcPhoneModelsButton':'calcAccTypesButton');
+  if(!menu || !button) return;
+  const open = menu.style.display === 'block';
+  document.querySelectorAll('.multiselect-menu').forEach(el=>el.style.display='none');
+  menu.style.display = open ? 'none' : 'block';
+  if(!open) updatePerformanceSelectorSummary(type);
 }
 function toggleTheme(){
   data.settings.theme = data.settings.theme === 'dark' ? 'light' : 'dark';
@@ -577,11 +664,11 @@ function refreshCurrentScreen(){
   const activeEl = document.querySelector('.screen.active');
   if(!activeEl) return;
   const name = activeEl.id.replace('screen-','');
-  if(name==='sales') refreshSalesLists();
-  if(name==='repair') refreshRepairList();
+  if(name==='sales'){ refreshSalesLists(); applyStaffDirectoryDefaults(); }
+  if(name==='repair'){ refreshRepairList(); applyStaffDirectoryDefaults(); }
   if(name==='tradein') refreshTradeinList();
   if(name==='itemedit') refreshItemLists();
-  if(name==='settings'){ renderDropdownEditors(); populateSettingsControls(); }
+  if(name==='settings'){ renderDropdownEditors(); renderStaffDirectoryEditor(); populateSettingsControls(); }
   if(name==='home') renderHomeSearchResults();
   if(name==='activity'){ /* leave report as-is until user re-runs it */ }
   renderLowStockNotifications();
@@ -638,16 +725,19 @@ function fillSelect(id, list, placeholder){
 }
 function refreshAllDropdowns(){
   const s = data.settings;
+  const salespersonNames = [...new Set([...(s.salespersons || []), ...getStaffDirectoryNames('salesperson')])];
+  const technicianNames = [...new Set([...(s.technicians || []), ...getStaffDirectoryNames('technician')])];
   fillSelect('ps_brand', s.brands); fillSelect('ps_model', s.models); fillSelect('ps_storage', s.storage);
-  fillSelect('ps_payment', s.paymentModes); fillSelect('ps_salesperson', s.salespersons);
-  fillSelect('as_type', s.accessoryTypes); fillSelect('as_model', s.models); fillSelect('as_salesperson', s.salespersons);
-  fillSelect('rp_type', s.repairTypes); fillSelect('rp_model', s.models); fillSelect('rp_tech', s.technicians);
+  fillSelect('ps_payment', s.paymentModes); fillSelect('ps_salesperson', salespersonNames);
+  fillSelect('as_type', s.accessoryTypes); fillSelect('as_model', s.models); fillSelect('as_salesperson', salespersonNames);
+  fillSelect('rp_type', s.repairTypes); fillSelect('rp_model', s.models); fillSelect('rp_tech', technicianNames);
   fillSelect('rp_vendor', ["", ...s.vendors]);
   fillSelect('ti_brandin', s.brands); fillSelect('ti_modelin', s.models); fillSelect('ti_storagein', s.storage);
   fillSelect('ti_brandout', s.brands); fillSelect('ti_modelout', s.models); fillSelect('ti_storageout', s.storage);
-  fillSelect('ti_salesperson', s.salespersons);
+  fillSelect('ti_salesperson', salespersonNames);
   fillSelect('is_brand', s.brands); fillSelect('is_model', s.models); fillSelect('is_storage', s.storage);
   fillSelect('ia_type', s.accessoryTypes);
+  applyStaffDirectoryDefaults();
 }
 function refreshCalcDropdowns(){
   fillSelect('cp_model', data.settings.models);
@@ -843,8 +933,12 @@ function setCalcTab(tab){
 function renderPerformanceSelectors(){
   const phoneModels = data.settings.models || [];
   const accTypes = data.settings.accessoryTypes || [];
-  document.getElementById('calcPhoneModels').innerHTML = phoneModels.map(model=>`<label style="display:inline-flex;align-items:center;gap:6px;margin-right:10px"><input type="checkbox" value="${model}" checked> ${model}</label>`).join('');
-  document.getElementById('calcAccTypes').innerHTML = accTypes.map(type=>`<label style="display:inline-flex;align-items:center;gap:6px;margin-right:10px"><input type="checkbox" value="${type}" checked> ${type}</label>`).join('');
+  const phoneMenu = document.getElementById('calcPhoneModelsMenu');
+  const accMenu = document.getElementById('calcAccTypesMenu');
+  if(phoneMenu) phoneMenu.innerHTML = phoneModels.map(model=>`<label><input type="checkbox" value="${model}" onchange="updatePerformanceSelectorSummary('phone')" checked> ${model}</label>`).join('');
+  if(accMenu) accMenu.innerHTML = accTypes.map(type=>`<label><input type="checkbox" value="${type}" onchange="updatePerformanceSelectorSummary('acc')" checked> ${type}</label>`).join('');
+  updatePerformanceSelectorSummary('phone');
+  updatePerformanceSelectorSummary('acc');
 }
 function savePhonePrice(){
   if(!cp_model.value) return;
@@ -858,10 +952,10 @@ function saveAccPrice(){
   save(); alert('Price saved for '+ca_type.value+' / '+ca_model.value);
 }
 function getSelectedPerformanceModels(){
-  return Array.from(document.querySelectorAll('#calcPhoneModels input:checked')).map(el=>el.value);
+  return Array.from(document.querySelectorAll('#calcPhoneModelsMenu input:checked')).map(el=>el.value);
 }
 function getSelectedPerformanceTypes(){
-  return Array.from(document.querySelectorAll('#calcAccTypes input:checked')).map(el=>el.value);
+  return Array.from(document.querySelectorAll('#calcAccTypesMenu input:checked')).map(el=>el.value);
 }
 function runProfitCalc(){
   const from = calc_from.value, to = calc_to.value;
@@ -902,6 +996,11 @@ function getActivityRecords(tab){
     case 'repairs': return {title:'Repairs', records:data.repairs.filter(r=>inRange(r.date)), headers:['Date','Type','Model','Serial','Vendor','Technician','Amount','Status','Payment']};
     case 'tradeins': return {title:'Trade-ins', records:data.tradeins.filter(t=>inRange(t.date)), headers:['Date','Client','In','Out','Trade-in value','Amount added','Sales person']};
     case 'accessories': return {title:'Accessories', records:data.sales.accessories.filter(s=>inRange(s.date)), headers:['Date','Type','Model','Sales person','Amount']};
+    case 'loginactivity': {
+      const log = Array.isArray(data.activityLog) ? data.activityLog.slice() : [];
+      const filtered = log.filter(entry => inRange(entry.date)).sort((a,b)=>{ const aKey = `${a.date||''} ${a.time||''}`; const bKey = `${b.date||''} ${b.time||''}`; return bKey.localeCompare(aKey); });
+      return {title:'Login activity', records:filtered, headers:['Name/email','Role','Date','Time']};
+    }
     default: return {title:'Combined', records:[...data.sales.phones.filter(s=>inRange(s.date)).map(s=>({...s, category:'Sale'})), ...data.repairs.filter(r=>inRange(r.date)).map(r=>({...r, category:'Repair'})), ...data.tradeins.filter(t=>inRange(t.date)).map(t=>({...t, category:'Trade-in'})), ...data.sales.accessories.filter(s=>inRange(s.date)).map(s=>({...s, category:'Accessory'}))], headers:['Category','Date','Item','Amount']};
   }
 }
@@ -942,24 +1041,25 @@ function renderActivityChart(items){
   activityChart = new Chart(ctx, { type:'bar', data:{ labels, datasets:[{ label: document.getElementById('act_analytics').value==='sales' ? 'Revenue' : 'Count', data:values, backgroundColor:['#4f46e5','#0ea5a4','#f59e0b','#ef4444','#22c55e','#8b5cf6','#06b6d4','#f43f5e'] }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:{ beginAtZero:true } } } });
 }
 function runActivity(){
-  const from = act_from.value, to = act_to.value;
   const { records, title, headers } = getActivityRecords(activityTab);
   const stats = [];
   if(activityTab==='sales'){ stats.push(['Phone sales', records.length]); stats.push(['Revenue', fmt(records.reduce((a,s)=>a+Number(s.amount||0),0))]); }
   else if(activityTab==='repairs'){ stats.push(['Repair jobs', records.length]); stats.push(['Revenue', fmt(records.reduce((a,r)=>a+Number(r.amount||0),0))]); }
   else if(activityTab==='tradeins'){ stats.push(['Trade-ins', records.length]); stats.push(['Value', fmt(records.reduce((a,t)=>a+Number(t.value||0),0))]); }
   else if(activityTab==='accessories'){ stats.push(['Accessory sales', records.length]); stats.push(['Revenue', fmt(records.reduce((a,s)=>a+Number(s.amount||0),0))]); }
+  else if(activityTab==='loginactivity'){ stats.push(['Login events', records.length]); }
   else { stats.push(['Combined records', records.length]); stats.push(['Revenue', fmt(records.reduce((a,r)=>a+Number(r.amount||r.value||r.added||0),0))]); }
-  const analyticsItems = buildActivityAnalytics(activityTab);
+  const analyticsItems = activityTab==='loginactivity' ? [] : buildActivityAnalytics(activityTab);
   const analyticsLabel = document.getElementById('act_analytics').value==='sales' ? 'Revenue' : 'Count';
+  const tableRows = activityTab==='loginactivity' ? records.map(r=>[r.name || r.email || 'Unknown', r.role || '—', r.date || '', r.time || '']) : activityTab==='combined' ? records.map(r=>[r.category||'Record', r.date||'', r.brand?`${r.brand} ${r.model}`:r.type?`${r.type} ${r.model}`:r.serialIn?`${r.serialIn} → ${r.serialOut}`:r.serial||'', fmt(r.amount||r.value||r.added||0)]) : activityTab==='sales' ? records.map(r=>[r.date,r.client,r.brand,r.model,r.storage,r.serial,r.payment,r.salesperson,fmt(r.amount)]) : activityTab==='repairs' ? records.map(r=>[r.date,r.type,r.model,r.serial,r.vendor||'—',r.tech,fmt(r.amount),r.status,r.payment]) : activityTab==='tradeins' ? records.map(r=>[r.date,r.client,`${r.brandIn} ${r.modelIn} (${r.storageIn})`,`${r.brandOut} ${r.modelOut} (${r.storageOut})`,fmt(r.value),fmt(r.added),r.salesperson]) : records.map(r=>[r.date,r.type,r.model,r.salesperson,fmt(r.amount)]);
   document.getElementById('activityResult').innerHTML = `
     <div class="stat-grid">
       ${stats.map(([label,value])=>`<div class="stat"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('')}
     </div>
-    <p style="font-size:13px"><strong>${title} analytics:</strong> ${analyticsItems.length ? analyticsItems.map(i=>`${i.label} (${analyticsLabel === 'Revenue' ? fmt(i.revenue) : i.count})`).join(', ') : 'No data'}</p>
-    ${records.length ? tableHtml(headers, activityTab==='combined' ? records.map(r=>[r.category||'Record', r.date||'', r.brand?`${r.brand} ${r.model}`:r.type?`${r.type} ${r.model}`:r.serialIn?`${r.serialIn} → ${r.serialOut}`:r.serial||'', fmt(r.amount||r.value||r.added||0)]) : activityTab==='sales' ? records.map(r=>[r.date,r.client,r.brand,r.model,r.storage,r.serial,r.payment,r.salesperson,fmt(r.amount)]) : activityTab==='repairs' ? records.map(r=>[r.date,r.type,r.model,r.serial,r.vendor||'—',r.tech,fmt(r.amount),r.status,r.payment]) : activityTab==='tradeins' ? records.map(r=>[r.date,r.client,`${r.brandIn} ${r.modelIn} (${r.storageIn})`,`${r.brandOut} ${r.modelOut} (${r.storageOut})`,fmt(r.value),fmt(r.added),r.salesperson]) : records.map(r=>[r.date,r.type,r.model,r.salesperson,fmt(r.amount)])) : '<div class="empty">No records in this range.</div>'}
+    ${activityTab!=='loginactivity' ? `<p style="font-size:13px"><strong>${title} analytics:</strong> ${analyticsItems.length ? analyticsItems.map(i=>`${i.label} (${analyticsLabel === 'Revenue' ? fmt(i.revenue) : i.count})`).join(', ') : 'No data'}</p>` : ''}
+    ${records.length ? tableHtml(headers, tableRows) : '<div class="empty">No records in this range.</div>'}
   `;
-  renderActivityChart(analyticsItems);
+  if(activityTab!=='loginactivity') renderActivityChart(analyticsItems);
   const invRows = data.inventory.phones.filter(p=>p.status!=='sold');
   document.getElementById('fullInventory').innerHTML = invRows.length ? tableHtml(
     ['Brand','Model','Storage','Serial','Date added'],
@@ -1024,6 +1124,55 @@ function changeCalcPassword(){
   if(lockInput) lockInput.value='';
   alert('Updated successfully.');
 }
+function changeManagementPassword(){
+  const input = document.getElementById('newManagementPassword');
+  const value = input ? input.value.trim() : '';
+  if(!value){ alert('Enter a new management password first.'); return; }
+  data.settings.managementPassword = value;
+  save();
+  if(input) input.value='';
+  alert('Management password updated.');
+}
+function renderStaffDirectoryEditor(){
+  const el = document.getElementById('staffDirectoryEditor');
+  if(!el) return;
+  const rows = Array.isArray(data.settings.staffDirectory) ? data.settings.staffDirectory : [];
+  el.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Email</th><th>Name</th><th>Role</th><th></th></tr></thead>
+        <tbody>
+          ${rows.length ? rows.map((entry, idx)=>`<tr><td>${entry.email || ''}</td><td>${entry.name || ''}</td><td>${entry.role || ''}</td><td><button class="danger-btn" type="button" onclick="removeStaffDirectoryEntry(${idx})">Remove</button></td></tr>`).join('') : '<tr><td colspan="4" class="empty">No staff entries yet.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+    <div class="grid" style="margin-top:12px">
+      <div class="field"><label>Email</label><input id="staffEmailInput"></div>
+      <div class="field"><label>Display name</label><input id="staffNameInput"></div>
+      <div class="field"><label>Role</label><select id="staffRoleInput"><option value="salesperson">Salesperson</option><option value="technician">Technician</option><option value="manager">Manager</option></select></div>
+    </div>
+    <div class="actions"><button class="secondary" type="button" onclick="addStaffDirectoryEntry()">Add staff entry</button></div>
+  `;
+}
+function addStaffDirectoryEntry(){
+  const emailInput = document.getElementById('staffEmailInput');
+  const nameInput = document.getElementById('staffNameInput');
+  const roleInput = document.getElementById('staffRoleInput');
+  const email = emailInput ? emailInput.value.trim().toLowerCase() : '';
+  const name = nameInput ? nameInput.value.trim() : '';
+  const role = roleInput ? roleInput.value : 'salesperson';
+  if(!email || !name) { alert('Enter both an email and display name.'); return; }
+  if(!Array.isArray(data.settings.staffDirectory)) data.settings.staffDirectory = [];
+  if(!data.settings.staffDirectory.some(entry => String(entry.email || '').trim().toLowerCase() === email)){ data.settings.staffDirectory.push({email, name, role}); }
+  save(); renderStaffDirectoryEditor(); refreshAllDropdowns(); applyStaffDirectoryDefaults();
+  if(emailInput) emailInput.value='';
+  if(nameInput) nameInput.value='';
+}
+function removeStaffDirectoryEntry(index){
+  if(!Array.isArray(data.settings.staffDirectory)) return;
+  data.settings.staffDirectory.splice(index,1);
+  save(); renderStaffDirectoryEditor(); refreshAllDropdowns(); applyStaffDirectoryDefaults();
+}
 function populateSettingsControls(){
   const input = document.getElementById('lowStockThresholdInput');
   const lockInput = document.getElementById('newLockCode');
@@ -1078,10 +1227,41 @@ function toggleNotifications(){
 function toggleManagementSettings(){
   const content = document.getElementById('managementSettingsContent');
   const button = document.getElementById('managementToggleBtn');
-  if(!content || !button) return;
+  const lockScreen = document.getElementById('managementLockScreen');
+  if(!content || !button || !lockScreen) return;
   const visible = content.style.display === 'block';
-  content.style.display = visible ? 'none' : 'block';
-  button.textContent = visible ? 'Show' : 'Hide';
+  if(visible){
+    content.style.display = 'none';
+    lockScreen.style.display = 'none';
+    button.textContent = 'Show';
+    return;
+  }
+  if(managementSettingsUnlocked){
+    content.style.display = 'block';
+    lockScreen.style.display = 'none';
+    button.textContent = 'Hide';
+    renderStaffDirectoryEditor();
+  } else {
+    content.style.display = 'none';
+    lockScreen.style.display = 'block';
+    button.textContent = 'Show';
+    document.getElementById('managementPasswordInput').value = '';
+    document.getElementById('managementError').textContent = '';
+  }
+}
+function checkManagementPassword(){
+  const input = document.getElementById('managementPasswordInput');
+  const error = document.getElementById('managementError');
+  if(!input || !error) return;
+  if(input.value === String(data.settings.managementPassword || 'admin123')){
+    managementSettingsUnlocked = true;
+    document.getElementById('managementSettingsContent').style.display = 'block';
+    document.getElementById('managementLockScreen').style.display = 'none';
+    document.getElementById('managementToggleBtn').textContent = 'Hide';
+    renderStaffDirectoryEditor();
+  } else {
+    error.textContent = 'Incorrect password.';
+  }
 }
 function showLockOverlay(){
   const overlay = document.getElementById('lockOverlay');
@@ -1260,10 +1440,12 @@ document.getElementById('ia_date').valueAsDate = new Date();
   document.addEventListener('click', (event)=>{
     const wrap = event.target.closest('.notif-wrap');
     const accountWrap = event.target.closest('.account-wrap');
+    const multiselectWrap = event.target.closest('.multiselect-wrap');
     const panel = document.getElementById('notifPanel');
     const accountPanel = document.getElementById('accountPanel');
     if(!wrap && panel) panel.style.display = 'none';
     if(!accountWrap && accountPanel) accountPanel.style.display = 'none';
+    if(!multiselectWrap){ document.querySelectorAll('.multiselect-menu').forEach(el=>el.style.display='none'); }
   });
 </script>
 
@@ -1296,6 +1478,7 @@ document.getElementById('ia_date').valueAsDate = new Date();
   const DOC_REF = doc(db, "shop", "main");
   let unsubscribeSnapshot = null;
   let suppressNextIncoming = false; // prevents feedback loop when we write, then hear our own write back
+  let wasSignedIn = false;
 
   function setSyncStatus(text, offline){
     const el = document.getElementById('syncStatus');
@@ -1329,6 +1512,17 @@ document.getElementById('ia_date').valueAsDate = new Date();
     if(settingsAccountEmail) settingsAccountEmail.textContent = email;
   }
 
+  function logLoginActivity(user){
+    if(!user) return;
+    const email = user.email || '';
+    const entry = { email, date: new Date().toISOString().slice(0,10), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) };
+    const staffEntry = window.getStaffDirectoryEntry(email);
+    if(staffEntry){ entry.name = staffEntry.name; entry.role = staffEntry.role; }
+    if(!Array.isArray(data.activityLog)) data.activityLog = [];
+    data.activityLog.unshift(entry);
+    window.save();
+  }
+
   window.requestPasswordReset = async function(){
     const emailInput = document.getElementById('login_email');
     const loginNotice = document.getElementById('loginNotice');
@@ -1350,6 +1544,9 @@ document.getElementById('ia_date').valueAsDate = new Date();
     const appRoot = document.getElementById('appRoot');
     updateAccountInfo(user);
     if(user){
+      if(!wasSignedIn){ logLoginActivity(user); }
+      wasSignedIn = true;
+      window.applyStaffDirectoryDefaults();
       loginScreen.style.display = 'none';
       appRoot.style.display = 'block';
       if(!unsubscribeSnapshot){
@@ -1365,6 +1562,7 @@ document.getElementById('ia_date').valueAsDate = new Date();
         );
       }
     } else {
+      wasSignedIn = false;
       loginScreen.style.display = 'flex';
       appRoot.style.display = 'none';
       if(unsubscribeSnapshot){ unsubscribeSnapshot(); unsubscribeSnapshot = null; }
