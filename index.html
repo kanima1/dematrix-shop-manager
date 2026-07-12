@@ -18,8 +18,8 @@
     --bg:#07111f; --card:#0f1c2d; --card-alt:#16253a; --border:#223249; --border-strong:#304666;
     --text:#eef4ff; --text-2:#a8bacd; --text-muted:#7890aa;
     --accent:#7c8cff; --accent-2:#34d3c3; --accent-bg:#1f2a4d; --accent-text:#dfe3ff;
-    --danger:#ff7b72; --danger-bg:#3a1f25; --success:#37c7b7; --success-bg:#12382d;
-    --warn:#ffbf5f; --warn-bg:#3d2c0e;
+    --danger:#ff8f86; --danger-bg:#4a1b23; --success:#5fe4ca; --success-bg:#153b33;
+    --warn:#ffd27a; --warn-bg:#48320d;
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);transition:background .2s,color .2s}
@@ -28,7 +28,7 @@
   header .sub{font-size:12px;color:var(--text-muted)}
   #backBtn{display:none;background:none;border:1px solid var(--border-strong);border-radius:var(--radius);padding:7px 12px;font-size:13px;cursor:pointer;color:var(--text)}
   .notif-wrap{position:relative}
-  .notif-btn{position:relative;background:var(--card);border:1px solid var(--border-strong);border-radius:999px;padding:8px 10px;cursor:pointer;font-size:16px}
+  .notif-btn,.theme-btn{position:relative;background:var(--card);border:1px solid var(--border-strong);border-radius:999px;padding:8px 10px;cursor:pointer;font-size:16px}
   .notif-badge{position:absolute;top:-4px;right:-2px;background:var(--danger);color:#fff;border-radius:999px;padding:2px 6px;font-size:10px;font-weight:700;display:none}
   .notif-panel{position:absolute;right:0;top:46px;width:280px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.12);padding:10px;z-index:20;display:none}
   .notif-panel .notif-item{padding:8px 6px;border-bottom:1px solid var(--border)}
@@ -61,7 +61,7 @@
   .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px}
   .card h2{font-size:15px;margin:0 0 14px;font-weight:600}
   .subnav{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-  .subnav button{background:var(--card);border:1px solid var(--border-strong);border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer}
+  .subnav button{background:var(--card);border:1px solid var(--border-strong);border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer;color:var(--text)}
   .subnav button.active{background:var(--text);color:#fff;border-color:var(--text)}
   form .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
   label{display:block;font-size:12px;color:var(--text-2);margin-bottom:4px;font-weight:500}
@@ -121,14 +121,16 @@
 
 <div id="loginScreen">
   <div class="card">
-    <h2>Dematrix shop manager</h2>
-    <p style="font-size:13px;color:var(--text-2);margin-top:-8px">Sign in to access shop records</p>
-    <div class="field" style="margin-bottom:10px"><label>Email</label><input type="email" id="login_email"></div>
-    <div class="field"><label>Password</label><input type="password" id="login_password"></div>
-    <div style="margin:8px 0 2px"><a href="#" onclick="event.preventDefault();requestPasswordReset()">Forgot password?</a></div>
-    <div class="actions" style="justify-content:center"><button class="primary" onclick="doLogin()">Sign in</button></div>
-    <div id="loginNotice"></div>
-    <div id="loginError"></div>
+    <form onsubmit="return doLogin(event)">
+      <h2>Dematrix shop manager</h2>
+      <p style="font-size:13px;color:var(--text-2);margin-top:-8px">Sign in to access shop records</p>
+      <div class="field" style="margin-bottom:10px"><label>Email</label><input type="email" id="login_email"></div>
+      <div class="field"><label>Password</label><input type="password" id="login_password"></div>
+      <div style="margin:8px 0 2px"><a href="#" onclick="event.preventDefault();requestPasswordReset()">Forgot password?</a></div>
+      <div class="actions" style="justify-content:center"><button class="primary" type="submit">Sign in</button></div>
+      <div id="loginNotice"></div>
+      <div id="loginError"></div>
+    </form>
   </div>
 </div>
 
@@ -143,6 +145,7 @@
       <button id="notifBtn" class="notif-btn" onclick="toggleNotifications()" aria-label="Low stock notifications">🔔<span id="notifBadge" class="notif-badge"></span></button>
       <div id="notifPanel" class="notif-panel"></div>
     </div>
+    <button id="themeBtn" class="theme-btn" onclick="toggleTheme()" aria-label="Toggle theme">☀︎</button>
     <div class="account-wrap">
       <button id="accountBtn" class="account-btn" onclick="toggleAccountMenu()" aria-label="Account options">👤</button>
       <div id="accountPanel" class="account-panel">
@@ -315,6 +318,7 @@
       <form onsubmit="return addAccStock(event)">
         <div class="grid">
           <div class="field"><label>Accessory type</label><select required id="ia_type"></select></div>
+          <div class="field"><label>Model</label><select required id="ia_model"></select></div>
           <div class="field"><label>Quantity to add</label><input required type="number" min="1" id="ia_qty"></div>
           <div class="field"><label>Date</label><input required type="date" id="ia_date"></div>
         </div>
@@ -330,13 +334,15 @@
   <!-- PERFORMANCE (locked) -->
   <div id="screen-calclock" class="screen">
     <div class="lockscreen card">
-      <h2>Performance</h2>
-      <p style="font-size:13px;color:var(--text-2)">This section is password protected.</p>
-      <input type="password" id="calcPasswordInput" placeholder="Enter password">
-      <div class="actions" style="justify-content:center">
-        <button class="primary" onclick="checkCalcPassword()">Unlock</button>
-      </div>
-      <div id="calcError" style="color:var(--danger);font-size:12px;margin-top:8px"></div>
+      <form onsubmit="return checkCalcPassword(event)">
+        <h2>Performance</h2>
+        <p style="font-size:13px;color:var(--text-2)">This section is password protected.</p>
+        <input type="password" id="calcPasswordInput" placeholder="Enter password">
+        <div class="actions" style="justify-content:center">
+          <button class="primary" type="submit">Unlock</button>
+        </div>
+        <div id="calcError" style="color:var(--danger);font-size:12px;margin-top:8px"></div>
+      </form>
     </div>
   </div>
 
@@ -347,9 +353,9 @@
         <button id="calcTabPhone" class="active" onclick="setCalcTab('phone')">Phones</button>
         <button id="calcTabAcc" onclick="setCalcTab('acc')">Accessories</button>
       </div>
-      <div id="calcPhonePriceForm">
+      <form id="calcPhonePriceForm" onsubmit="return savePhonePrice(event)">
         <div class="grid">
-          <div class="field"><label>Model</label><select id="cp_model"></select></div>
+          <div class="field"><label>Model</label><select id="cp_model" onchange="setPerformancePricePrefill()"></select></div>
           <div class="field"><label>Recorded selling price (₦)</label><input type="number" step="0.01" id="cp_price"></div>
         </div>
         <div class="field"><label>Select model(s) for performance analysis</label>
@@ -358,12 +364,12 @@
             <div class="multiselect-menu" id="calcPhoneModelsMenu"></div>
           </div>
         </div>
-        <div class="actions"><button class="primary" type="button" onclick="savePhonePrice()">Save price</button></div>
-      </div>
-      <div id="calcAccPriceForm" style="display:none">
+        <div class="actions"><button class="primary" type="submit">Save price</button></div>
+      </form>
+      <form id="calcAccPriceForm" style="display:none" onsubmit="return saveAccPrice(event)">
         <div class="grid">
-          <div class="field"><label>Accessory type</label><select id="ca_type"></select></div>
-          <div class="field"><label>Model</label><select id="ca_model"></select></div>
+          <div class="field"><label>Accessory type</label><select id="ca_type" onchange="setPerformancePricePrefill()"></select></div>
+          <div class="field"><label>Model</label><select id="ca_model" onchange="setPerformancePricePrefill()"></select></div>
           <div class="field"><label>Recorded selling price (₦)</label><input type="number" step="0.01" id="ca_price"></div>
         </div>
         <div class="field"><label>Select accessory type(s) for performance analysis</label>
@@ -372,8 +378,8 @@
             <div class="multiselect-menu" id="calcAccTypesMenu"></div>
           </div>
         </div>
-        <div class="actions"><button class="primary" type="button" onclick="saveAccPrice()">Save price</button></div>
-      </div>
+        <div class="actions"><button class="primary" type="submit">Save price</button></div>
+      </form>
     </div>
 
     <div class="card">
@@ -457,6 +463,7 @@
         <button class="secondary" type="button" onclick="requestPasswordReset()">Send password reset email</button>
         <button class="secondary" type="button" onclick="handleSignOut()">Sign out</button>
       </div>
+      <div id="settingsResetStatus" style="font-size:12px;min-height:16px;margin-top:6px"></div>
     </div>
     <div class="card">
       <h2>Password</h2>
@@ -472,15 +479,21 @@
         <button class="secondary" type="button" id="managementToggleBtn" onclick="toggleManagementSettings()">Show</button>
       </div>
       <div id="managementLockScreen" class="lockscreen card" style="display:none;margin:16px 0 0">
-        <h2>Management settings</h2>
-        <p style="font-size:13px;color:var(--text-2)">Enter the management password to access these controls.</p>
-        <input type="password" id="managementPasswordInput" placeholder="Enter password">
-        <div class="actions" style="justify-content:center">
-          <button class="primary" onclick="checkManagementPassword()">Unlock</button>
-        </div>
-        <div id="managementError" style="color:var(--danger);font-size:12px;margin-top:8px"></div>
+        <form onsubmit="return checkManagementPassword(event)">
+          <h2>Management settings</h2>
+          <p style="font-size:13px;color:var(--text-2)">Enter the management password to access these controls.</p>
+          <input type="password" id="managementPasswordInput" placeholder="Enter password">
+          <div class="actions" style="justify-content:center">
+            <button class="primary" type="submit">Unlock</button>
+          </div>
+          <div id="managementError" style="color:var(--danger);font-size:12px;margin-top:8px"></div>
+        </form>
       </div>
       <div id="managementSettingsContent" style="display:none">
+        <div class="actions" style="margin:16px 0 0;justify-content:space-between;align-items:center">
+          <button class="primary" type="button" onclick="commitManagementChanges()">Save changes</button>
+          <div id="managementSaveStatus" style="font-size:12px;color:var(--success)"></div>
+        </div>
         <div class="card" style="margin:16px 0 0;padding:0;border:none;box-shadow:none">
           <h2>Management password</h2>
           <div class="grid">
@@ -527,13 +540,15 @@
 
 <div id="lockOverlay">
   <div class="card">
-    <h2>Tool locked</h2>
-    <p style="font-size:13px;color:var(--text-2)">Enter the app lock code to continue.</p>
-    <input type="password" id="lockCodeInput" placeholder="Enter lock code">
-    <div class="actions" style="justify-content:center">
-      <button class="primary" onclick="checkLockCode()">Unlock</button>
-    </div>
-    <div id="lockError" style="color:var(--danger);font-size:12px;margin-top:8px"></div>
+    <form onsubmit="return checkLockCode(event)">
+      <h2>Tool locked</h2>
+      <p style="font-size:13px;color:var(--text-2)">Enter the app lock code to continue.</p>
+      <input type="password" id="lockCodeInput" placeholder="Enter lock code">
+      <div class="actions" style="justify-content:center">
+        <button class="primary" type="submit">Unlock</button>
+      </div>
+      <div id="lockError" style="color:var(--danger);font-size:12px;margin-top:8px"></div>
+    </form>
   </div>
 </div>
 
@@ -599,7 +614,9 @@ function applyTheme(){
   const theme = (data.settings && data.settings.theme) || 'light';
   document.documentElement.setAttribute('data-theme', theme);
   const btn = document.getElementById('themeToggleBtn');
+  const headerBtn = document.getElementById('themeBtn');
   if(btn) btn.textContent = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+  if(headerBtn) headerBtn.textContent = theme === 'dark' ? '☾' : '☀︎';
 }
 function getStaffDirectoryEntry(email){
   const list = Array.isArray(data.settings?.staffDirectory) ? data.settings.staffDirectory : [];
@@ -647,6 +664,21 @@ function togglePerformanceSelector(type){
   menu.style.display = open ? 'none' : 'block';
   if(!open) updatePerformanceSelectorSummary(type);
 }
+function setPerformancePricePrefill(){
+  const phoneModel = document.getElementById('cp_model');
+  const phonePrice = document.getElementById('cp_price');
+  if(phoneModel && phonePrice){
+    const selected = phoneModel.value;
+    phonePrice.value = selected && data.prices.phones[selected] !== undefined ? data.prices.phones[selected] : '';
+  }
+  const accType = document.getElementById('ca_type');
+  const accModel = document.getElementById('ca_model');
+  const accPrice = document.getElementById('ca_price');
+  if(accType && accModel && accPrice){
+    const key = `${accType.value || ''}|${accModel.value || ''}`;
+    accPrice.value = key && data.prices.accessories[key] !== undefined ? data.prices.accessories[key] : '';
+  }
+}
 function toggleTheme(){
   data.settings.theme = data.settings.theme === 'dark' ? 'light' : 'dark';
   save(); applyTheme();
@@ -673,15 +705,17 @@ function refreshCurrentScreen(){
   if(name==='activity'){ /* leave report as-is until user re-runs it */ }
   renderLowStockNotifications();
 }
-function doLogin(){
+function doLogin(e){
+  if(e) e.preventDefault();
   const email = document.getElementById('login_email').value.trim();
   const pw = document.getElementById('login_password').value;
   const errEl = document.getElementById('loginError');
   errEl.textContent = '';
-  if(!email || !pw){ errEl.textContent = 'Enter email and password.'; return; }
+  if(!email || !pw){ errEl.textContent = 'Enter email and password.'; return false; }
   window.cloudSignIn(email, pw).catch(err=>{
     errEl.textContent = err.message.replace('Firebase: ','');
   });
+  return false;
 }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function fmt(n){ return '₦'+Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); }
@@ -736,7 +770,7 @@ function refreshAllDropdowns(){
   fillSelect('ti_brandout', s.brands); fillSelect('ti_modelout', s.models); fillSelect('ti_storageout', s.storage);
   fillSelect('ti_salesperson', salespersonNames);
   fillSelect('is_brand', s.brands); fillSelect('is_model', s.models); fillSelect('is_storage', s.storage);
-  fillSelect('ia_type', s.accessoryTypes);
+  fillSelect('ia_type', s.accessoryTypes); fillSelect('ia_model', s.models);
   applyStaffDirectoryDefaults();
 }
 function refreshCalcDropdowns(){
@@ -744,6 +778,7 @@ function refreshCalcDropdowns(){
   fillSelect('ca_type', data.settings.accessoryTypes);
   fillSelect('ca_model', data.settings.models);
   renderPerformanceSelectors();
+  setPerformancePricePrefill();
 }
 
 /* ---------- SALES ---------- */
@@ -771,7 +806,7 @@ function saveAccSale(e){
   e.preventDefault();
   const rec = {id:uid(),type:as_type.value,model:as_model.value,amount:parseFloat(as_amount.value),date:as_date.value,salesperson:as_salesperson.value};
   data.sales.accessories.push(rec);
-  const inv = data.inventory.accessories.find(a=>a.type===rec.type);
+  const inv = data.inventory.accessories.find(a=>a.type===rec.type && (a.model||'')===rec.model);
   if(inv && inv.qty>0) inv.qty -= 1;
   save(); e.target.reset(); refreshSalesLists();
   return false;
@@ -865,8 +900,9 @@ function addPhoneStock(e){
 }
 function addAccStock(e){
   e.preventDefault();
-  let inv = data.inventory.accessories.find(a=>a.type===ia_type.value);
-  if(!inv){ inv = {type:ia_type.value, qty:0}; data.inventory.accessories.push(inv); }
+  const model = ia_model.value;
+  let inv = data.inventory.accessories.find(a=>a.type===ia_type.value && a.model===model);
+  if(!inv){ inv = {type:ia_type.value, model, qty:0}; data.inventory.accessories.push(inv); }
   inv.qty += parseInt(ia_qty.value,10);
   save(); e.target.reset(); refreshItemLists();
   return false;
@@ -905,12 +941,12 @@ function refreshItemLists(){
       <div class="stat"><div class="label">In stock</div><div class="value">${accInStock}</div></div>
       <div class="stat"><div class="label">Total added</div><div class="value">${accTotalAdded}</div></div>
     </div>` + (accs.length? tableHtml(
-      ['Type','Quantity remaining',''],
-      accs.map(a=>[a.type,a.qty,`<div style="display:flex;gap:6px"><button class="danger-btn" onclick="delInventoryAcc('${a.type}')">Remove</button><button class="secondary" onclick="exportSingleRows('inventory-accessory','${a.type}')">Export</button></div>`])
+      ['Type','Model','Quantity remaining',''],
+      accs.map(a=>[a.type,a.model||'—',a.qty,`<div style="display:flex;gap:6px"><button class="danger-btn" onclick="delInventoryAcc('${a.type}','${a.model||''}')">Remove</button><button class="secondary" onclick="exportSingleRows('inventory-accessory','${a.type}|${a.model||''}')">Export</button></div>`])
     ) : '<div class="empty">No accessory stock recorded yet.</div>');
 }
 function delInventoryPhone(id){ data.inventory.phones = data.inventory.phones.filter(p=>p.id!==id); save(); refreshItemLists(); }
-function delInventoryAcc(type){ data.inventory.accessories = data.inventory.accessories.filter(a=>a.type!==type); save(); refreshItemLists(); }
+function delInventoryAcc(type, model){ data.inventory.accessories = data.inventory.accessories.filter(a=>!(a.type===type && (a.model||'')===model)); save(); refreshItemLists(); }
 
 /* ---------- CALCULATION (password protected) ---------- */
 let activityTab = 'combined';
@@ -920,9 +956,11 @@ function openCalc(){
   document.getElementById('calcPasswordInput').value='';
   showScreen('calclock');
 }
-function checkCalcPassword(){
+function checkCalcPassword(e){
+  if(e) e.preventDefault();
   if(calcPasswordInput.value === data.settings.calcPassword){ showScreen('calc'); }
   else { document.getElementById('calcError').textContent = 'Incorrect password.'; }
+  return false;
 }
 function setCalcTab(tab){
   document.getElementById('calcTabPhone').classList.toggle('active', tab==='phone');
@@ -940,16 +978,18 @@ function renderPerformanceSelectors(){
   updatePerformanceSelectorSummary('phone');
   updatePerformanceSelectorSummary('acc');
 }
-function savePhonePrice(){
-  if(!cp_model.value) return;
+function savePhonePrice(e){
+  if(e) e.preventDefault();
+  if(!cp_model.value) return false;
   data.prices.phones[cp_model.value] = parseFloat(cp_price.value||0);
-  save(); alert('Price saved for '+cp_model.value);
+  save(); alert('Price saved for '+cp_model.value); return false;
 }
-function saveAccPrice(){
-  if(!ca_type.value || !ca_model.value) return;
+function saveAccPrice(e){
+  if(e) e.preventDefault();
+  if(!ca_type.value || !ca_model.value) return false;
   const key = ca_type.value+'|'+ca_model.value;
   data.prices.accessories[key] = parseFloat(ca_price.value||0);
-  save(); alert('Price saved for '+ca_type.value+' / '+ca_model.value);
+  save(); alert('Price saved for '+ca_type.value+' / '+ca_model.value); return false;
 }
 function getSelectedPerformanceModels(){
   return Array.from(document.querySelectorAll('#calcPhoneModelsMenu input:checked')).map(el=>el.value);
@@ -1195,12 +1235,24 @@ function changeLowStockThreshold(){
   renderLowStockNotifications();
   alert('Low-stock threshold updated.');
 }
+function commitManagementChanges(){
+  const status = document.getElementById('managementSaveStatus');
+  if(status) status.textContent = 'Saving…';
+  save();
+  if(status) status.textContent = 'Saved';
+  setTimeout(()=>{ if(status) status.textContent=''; }, 1800);
+}
 function getLowStockItems(){
   const threshold = Number(data.settings.lowStockThreshold ?? 3);
   const low = [];
   data.inventory.accessories.forEach(item=>{
     const qty = Number(item.qty || 0);
-    if(qty < threshold){ low.push({type:'Accessory', name:item.type, count:qty}); }
+    if(qty < threshold){
+      const modelValue = String(item.model || '').trim();
+      const model = modelValue && modelValue !== 'Unspecified' ? modelValue : '';
+      const fullName = [item.type, model].filter(Boolean).join(' — ');
+      low.push({type:'Accessory', name: fullName || item.type, count:qty});
+    }
   });
   const phoneCounts = {};
   data.inventory.phones.filter(p=>p.status!=='sold').forEach(p=>{
@@ -1249,10 +1301,11 @@ function toggleManagementSettings(){
     document.getElementById('managementError').textContent = '';
   }
 }
-function checkManagementPassword(){
+function checkManagementPassword(e){
+  if(e) e.preventDefault();
   const input = document.getElementById('managementPasswordInput');
   const error = document.getElementById('managementError');
-  if(!input || !error) return;
+  if(!input || !error) return false;
   if(input.value === String(data.settings.managementPassword || 'admin123')){
     managementSettingsUnlocked = true;
     document.getElementById('managementSettingsContent').style.display = 'block';
@@ -1262,6 +1315,7 @@ function checkManagementPassword(){
   } else {
     error.textContent = 'Incorrect password.';
   }
+  return false;
 }
 function showLockOverlay(){
   const overlay = document.getElementById('lockOverlay');
@@ -1277,12 +1331,14 @@ function hideLockOverlay(){
   const overlay = document.getElementById('lockOverlay');
   if(overlay) overlay.style.display='none';
 }
-function checkLockCode(){
+function checkLockCode(e){
+  if(e) e.preventDefault();
   const input = document.getElementById('lockCodeInput');
   const error = document.getElementById('lockError');
-  if(!input || !error) return;
+  if(!input || !error) return false;
   if(input.value === String(data.settings.lockCode || '1234')){ hideLockOverlay(); }
   else { error.textContent='Incorrect lock code.'; }
+  return false;
 }
 function toggleAccountMenu(){
   const panel = document.getElementById('accountPanel');
@@ -1365,7 +1421,7 @@ function exportSingleRows(type, id){
   else if(type==='repairs'){ const rec = data.repairs.find(r=>r.id===id); if(rec){ headers=['Date','Type','Model','Serial','Vendor','Technician','Amount','Status','Payment']; rows=[[rec.date,rec.type,rec.model,rec.serial,rec.vendor||'',rec.tech,rec.amount,rec.status,rec.payment]]; }}
   else if(type==='tradeins'){ const rec = data.tradeins.find(r=>r.id===id); if(rec){ headers=['Date','Client','In','Out','Trade-in value','Amount added','Sales person']; rows=[[rec.date,rec.client,`${rec.brandIn} ${rec.modelIn} (${rec.storageIn})`,`${rec.brandOut} ${rec.modelOut} (${rec.storageOut})`,rec.value,rec.added,rec.salesperson]]; }}
   else if(type==='inventory-phone'){ const rec = data.inventory.phones.find(r=>r.id===id); if(rec){ headers=['Date added','Brand','Model','Storage','Serial','Status']; rows=[[rec.date,rec.brand,rec.model,rec.storage,rec.serial,rec.status]]; }}
-  else if(type==='inventory-accessory'){ const rec = data.inventory.accessories.find(r=>r.type===id); if(rec){ headers=['Type','Quantity remaining']; rows=[[rec.type,rec.qty]]; }}
+  else if(type==='inventory-accessory'){ const [typeValue, modelValue] = String(id||'').split('|'); const rec = data.inventory.accessories.find(r=>r.type===typeValue && (r.model||'')===modelValue); if(rec){ headers=['Type','Model','Quantity remaining']; rows=[[rec.type,rec.model||'',rec.qty]]; }}
   if(headers.length) exportRowsToExcel(`export-${type}`, headers, rows);
 }
 function generatePrintExport(){
@@ -1447,6 +1503,11 @@ document.getElementById('ia_date').valueAsDate = new Date();
     if(!accountWrap && accountPanel) accountPanel.style.display = 'none';
     if(!multiselectWrap){ document.querySelectorAll('.multiselect-menu').forEach(el=>el.style.display='none'); }
   });
+  document.addEventListener('keydown', (event)=>{
+    if(event.key === 'Enter' && event.target && event.target.tagName === 'INPUT' && !event.target.form){
+      event.preventDefault();
+    }
+  });
 </script>
 
 <script type="module">
@@ -1527,15 +1588,21 @@ document.getElementById('ia_date').valueAsDate = new Date();
     const emailInput = document.getElementById('login_email');
     const loginNotice = document.getElementById('loginNotice');
     const loginError = document.getElementById('loginError');
+    const settingsStatus = document.getElementById('settingsResetStatus');
     const currentUserEmail = auth.currentUser ? auth.currentUser.email : '';
     const email = currentUserEmail || ((emailInput ? emailInput.value.trim() : '') || prompt('Enter your email address to receive a reset link:'));
     if(!email){ return; }
-    loginError.textContent = '';
+    if(loginError) loginError.textContent = '';
+    const showMessage = (message, isError) => {
+      if(loginNotice){ loginNotice.textContent = message; loginNotice.classList.toggle('error', !!isError); }
+      if(loginError){ loginError.textContent = isError ? message : ''; }
+      if(settingsStatus){ settingsStatus.textContent = message; settingsStatus.style.color = isError ? 'var(--danger)' : 'var(--success)'; }
+    };
     try{
       await sendPasswordResetEmail(auth, email);
-      if(loginNotice) { loginNotice.textContent = 'If that email has an account, a reset link has been sent'; loginNotice.classList.remove('error'); }
+      showMessage('If that email has an account, a reset link has been sent', false);
     }catch(err){
-      if(loginNotice) { loginNotice.textContent = err.message.replace('Firebase: ', ''); loginNotice.classList.add('error'); }
+      showMessage(err.message.replace('Firebase: ', ''), true);
     }
   };
 
