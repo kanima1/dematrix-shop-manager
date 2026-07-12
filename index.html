@@ -89,7 +89,7 @@
   .multiselect-wrap{position:relative}
   .multiselect-button{width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center}
   .multiselect-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;box-shadow:0 10px 24px rgba(15,23,42,.12);z-index:15;display:none;max-height:220px;overflow:auto}
-  .multiselect-menu label{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:400}
+  .multiselect-menu label{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:400;color:var(--text);width:100%;overflow:visible}
   .account-wrap{position:relative}
   .account-btn{background:var(--card);border:1px solid var(--border-strong);border-radius:999px;padding:8px 10px;cursor:pointer;font-size:16px}
   .account-panel{position:absolute;right:0;top:46px;width:260px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.12);padding:12px;z-index:20;display:none}
@@ -586,6 +586,7 @@ const DEFAULTS = {
 
 let data = load();
 let managementSettingsUnlocked = false;
+let managementPendingChanges = false;
 function deepMerge(base, incoming){
   if(Array.isArray(base)) return Array.isArray(incoming) ? incoming.slice() : [];
   if(base && typeof base==='object' && incoming && typeof incoming==='object'){
@@ -1130,7 +1131,7 @@ function renderDropdownEditors(){
     <div style="margin-bottom:18px">
       <label>${f.label}</label>
       <div style="display:flex;gap:8px">
-        <input id="newval_${f.key}" placeholder="Add new ${f.label.toLowerCase().slice(0,-1)}">
+        <input id="newval_${f.key}" placeholder="Add new ${f.label.toLowerCase().slice(0,-1)}" onkeydown="if(event.key==='Enter'){event.preventDefault();addDropdownValue('${f.key}');}">
         <button class="secondary" style="width:auto" onclick="addDropdownValue('${f.key}')">Add</button>
       </div>
       <div class="tag-list" id="tags_${f.key}">
@@ -1145,11 +1146,13 @@ function addDropdownValue(key){
   if(!v) return;
   if(!data.settings[key].includes(v)) data.settings[key].push(v);
   input.value='';
-  save(); renderDropdownEditors(); refreshAllDropdowns(); refreshCalcDropdowns();
+  managementPendingChanges = true;
+  renderDropdownEditors(); refreshAllDropdowns(); refreshCalcDropdowns();
 }
 function removeDropdownValue(key,v){
   data.settings[key] = data.settings[key].filter(x=>x!==v);
-  save(); renderDropdownEditors(); refreshAllDropdowns(); refreshCalcDropdowns();
+  managementPendingChanges = true;
+  renderDropdownEditors(); refreshAllDropdowns(); refreshCalcDropdowns();
 }
 function changeCalcPassword(){
   const passwordInput = document.getElementById('newCalcPassword');
@@ -1187,8 +1190,8 @@ function renderStaffDirectoryEditor(){
       </table>
     </div>
     <div class="grid" style="margin-top:12px">
-      <div class="field"><label>Email</label><input id="staffEmailInput"></div>
-      <div class="field"><label>Display name</label><input id="staffNameInput"></div>
+      <div class="field"><label>Email</label><input id="staffEmailInput" onkeydown="if(event.key==='Enter'){event.preventDefault();addStaffDirectoryEntry();}"></div>
+      <div class="field"><label>Display name</label><input id="staffNameInput" onkeydown="if(event.key==='Enter'){event.preventDefault();addStaffDirectoryEntry();}"></div>
       <div class="field"><label>Role</label><select id="staffRoleInput"><option value="salesperson">Salesperson</option><option value="technician">Technician</option><option value="manager">Manager</option></select></div>
     </div>
     <div class="actions"><button class="secondary" type="button" onclick="addStaffDirectoryEntry()">Add staff entry</button></div>
@@ -1204,14 +1207,16 @@ function addStaffDirectoryEntry(){
   if(!email || !name) { alert('Enter both an email and display name.'); return; }
   if(!Array.isArray(data.settings.staffDirectory)) data.settings.staffDirectory = [];
   if(!data.settings.staffDirectory.some(entry => String(entry.email || '').trim().toLowerCase() === email)){ data.settings.staffDirectory.push({email, name, role}); }
-  save(); renderStaffDirectoryEditor(); refreshAllDropdowns(); applyStaffDirectoryDefaults();
+  managementPendingChanges = true;
+  renderStaffDirectoryEditor(); refreshAllDropdowns(); applyStaffDirectoryDefaults();
   if(emailInput) emailInput.value='';
   if(nameInput) nameInput.value='';
 }
 function removeStaffDirectoryEntry(index){
   if(!Array.isArray(data.settings.staffDirectory)) return;
   data.settings.staffDirectory.splice(index,1);
-  save(); renderStaffDirectoryEditor(); refreshAllDropdowns(); applyStaffDirectoryDefaults();
+  managementPendingChanges = true;
+  renderStaffDirectoryEditor(); refreshAllDropdowns(); applyStaffDirectoryDefaults();
 }
 function populateSettingsControls(){
   const input = document.getElementById('lowStockThresholdInput');
@@ -1238,9 +1243,26 @@ function changeLowStockThreshold(){
 function commitManagementChanges(){
   const status = document.getElementById('managementSaveStatus');
   if(status) status.textContent = 'Saving…';
-  save();
+  if(managementPendingChanges){ save(); managementPendingChanges = false; }
   if(status) status.textContent = 'Saved';
   setTimeout(()=>{ if(status) status.textContent=''; }, 1800);
+}
+function getDismissedLowStockItems(){
+  try{
+    const raw = localStorage.getItem('dematrixDismissedLowStock');
+    return raw ? JSON.parse(raw) : [];
+  }catch{return [];} 
+}
+function saveDismissedLowStockItems(items){
+  localStorage.setItem('dematrixDismissedLowStock', JSON.stringify(items));
+}
+function dismissLowStockItems(){
+  const items = getLowStockItems();
+  if(!items.length) return;
+  const dismissed = getDismissedLowStockItems();
+  const next = [...dismissed.filter(entry => !items.some(item => item.key === entry.key)), ...items.map(item => ({key:item.key, count:item.count}))];
+  saveDismissedLowStockItems(next);
+  renderLowStockNotifications();
 }
 function getLowStockItems(){
   const threshold = Number(data.settings.lowStockThreshold ?? 3);
@@ -1251,7 +1273,7 @@ function getLowStockItems(){
       const modelValue = String(item.model || '').trim();
       const model = modelValue && modelValue !== 'Unspecified' ? modelValue : '';
       const fullName = [item.type, model].filter(Boolean).join(' — ');
-      low.push({type:'Accessory', name: fullName || item.type, count:qty});
+      low.push({type:'Accessory', name: fullName || item.type, count:qty, key:`accessory:${item.type}:${model || ''}`});
     }
   });
   const phoneCounts = {};
@@ -1259,8 +1281,17 @@ function getLowStockItems(){
     const key = `${p.brand} ${p.model}`;
     phoneCounts[key] = (phoneCounts[key] || 0) + 1;
   });
-  Object.entries(phoneCounts).forEach(([name,count])=>{ if(count < threshold) low.push({type:'Phone', name, count}); });
-  return low;
+  Object.entries(phoneCounts).forEach(([name,count])=>{ if(count < threshold) low.push({type:'Phone', name, count, key:`phone:${name}`}); });
+  const dismissed = getDismissedLowStockItems();
+  const filtered = low.filter(item => {
+    const entry = dismissed.find(d => d.key === item.key);
+    if(!entry) return true;
+    if(Number(item.count) !== Number(entry.count)) return true;
+    return false;
+  });
+  const activeDismissed = dismissed.filter(entry => filtered.some(item => item.key === entry.key));
+  saveDismissedLowStockItems(activeDismissed);
+  return filtered;
 }
 function renderLowStockNotifications(){
   const badge = document.getElementById('notifBadge');
@@ -1269,7 +1300,13 @@ function renderLowStockNotifications(){
   const items = getLowStockItems();
   badge.textContent = items.length;
   badge.style.display = items.length ? 'inline-flex' : 'none';
-  panel.innerHTML = items.length ? items.map(item=>`<div class="notif-item"><strong>${item.name}</strong><div style="font-size:12px;color:var(--text-muted)">${item.type} • ${item.count} available</div></div>`).join('') : '<div class="notif-empty">No low-stock items.</div>';
+  panel.innerHTML = items.length ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
+      <strong style="font-size:12px">Low stock</strong>
+      <button class="secondary" type="button" onclick="dismissLowStockItems()" style="padding:4px 8px;font-size:12px">Clear</button>
+    </div>
+    ${items.map(item=>`<div class="notif-item"><strong>${item.name}</strong><div style="font-size:12px;color:var(--text-muted)">${item.type} • ${item.count} available</div></div>`).join('')}
+  ` : '<div class="notif-empty">No low-stock items.</div>';
 }
 function toggleNotifications(){
   const panel = document.getElementById('notifPanel');
@@ -1502,11 +1539,6 @@ document.getElementById('ia_date').valueAsDate = new Date();
     if(!wrap && panel) panel.style.display = 'none';
     if(!accountWrap && accountPanel) accountPanel.style.display = 'none';
     if(!multiselectWrap){ document.querySelectorAll('.multiselect-menu').forEach(el=>el.style.display='none'); }
-  });
-  document.addEventListener('keydown', (event)=>{
-    if(event.key === 'Enter' && event.target && event.target.tagName === 'INPUT' && !event.target.form){
-      event.preventDefault();
-    }
   });
 </script>
 
