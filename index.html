@@ -89,8 +89,9 @@
   .multiselect-wrap{position:relative}
   .multiselect-button{width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center}
   .multiselect-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;box-shadow:0 10px 24px rgba(15,23,42,.12);z-index:15;display:none;max-height:220px;overflow:auto}
-  .multiselect-menu label{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:400;color:var(--text);width:100%;text-align:left}
-  .multiselect-menu label input[type="checkbox"]{flex-shrink:0;margin:0}
+  .multiselect-menu .performance-option{display:block;width:100%;text-align:left;border:none;background:transparent;color:var(--text);padding:4px 0;line-height:1.2;cursor:pointer;border-radius:4px;font:inherit;margin:0}
+  .multiselect-menu .performance-option:hover{background:var(--bg)}
+  .multiselect-menu .performance-option.selected{background:var(--accent-bg);color:var(--accent-text)}
   .account-wrap{position:relative}
   .account-btn{background:var(--card);border:1px solid var(--border-strong);border-radius:999px;padding:8px 10px;cursor:pointer;font-size:16px}
   .account-panel{position:absolute;right:0;top:46px;width:260px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.12);padding:12px;z-index:20;display:none}
@@ -653,8 +654,8 @@ function updatePerformanceSelectorSummary(type){
   const button = document.getElementById(type==='phone'?'calcPhoneModelsButton':'calcAccTypesButton');
   const menu = document.getElementById(type==='phone'?'calcPhoneModelsMenu':'calcAccTypesMenu');
   if(!button || !menu) return;
-  const selected = Array.from(menu.querySelectorAll('input:checked')).length;
-  const total = menu.querySelectorAll('input').length;
+  const selected = menu.querySelectorAll('.performance-option.selected').length;
+  const total = menu.querySelectorAll('.performance-option').length;
   button.textContent = total ? `${selected} of ${total} selected` : 'None selected';
 }
 function togglePerformanceSelector(type){
@@ -975,10 +976,15 @@ function renderPerformanceSelectors(){
   const accTypes = data.settings.accessoryTypes || [];
   const phoneMenu = document.getElementById('calcPhoneModelsMenu');
   const accMenu = document.getElementById('calcAccTypesMenu');
-  if(phoneMenu) phoneMenu.innerHTML = phoneModels.map(model=>`<label><input type="checkbox" value="${model}" onchange="updatePerformanceSelectorSummary('phone')" checked> ${model}</label>`).join('');
-  if(accMenu) accMenu.innerHTML = accTypes.map(type=>`<label><input type="checkbox" value="${type}" onchange="updatePerformanceSelectorSummary('acc')" checked> ${type}</label>`).join('');
+  if(phoneMenu) phoneMenu.innerHTML = phoneModels.map(model=>`<button type="button" class="performance-option selected" data-value="${model}" onclick="togglePerformanceSelectorOption('phone', this)">${model}</button>`).join('');
+  if(accMenu) accMenu.innerHTML = accTypes.map(type=>`<button type="button" class="performance-option selected" data-value="${type}" onclick="togglePerformanceSelectorOption('acc', this)">${type}</button>`).join('');
   updatePerformanceSelectorSummary('phone');
   updatePerformanceSelectorSummary('acc');
+}
+function togglePerformanceSelectorOption(type, el){
+  if(!el) return;
+  el.classList.toggle('selected');
+  updatePerformanceSelectorSummary(type);
 }
 function savePhonePrice(e){
   if(e) e.preventDefault();
@@ -994,10 +1000,10 @@ function saveAccPrice(e){
   save(); alert('Price saved for '+ca_type.value+' / '+ca_model.value); return false;
 }
 function getSelectedPerformanceModels(){
-  return Array.from(document.querySelectorAll('#calcPhoneModelsMenu input:checked')).map(el=>el.value);
+  return Array.from(document.querySelectorAll('#calcPhoneModelsMenu .performance-option.selected')).map(el=>el.getAttribute('data-value'));
 }
 function getSelectedPerformanceTypes(){
-  return Array.from(document.querySelectorAll('#calcAccTypesMenu input:checked')).map(el=>el.value);
+  return Array.from(document.querySelectorAll('#calcAccTypesMenu .performance-option.selected')).map(el=>el.getAttribute('data-value'));
 }
 function runProfitCalc(){
   const from = calc_from.value, to = calc_to.value;
