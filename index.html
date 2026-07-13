@@ -1581,14 +1581,16 @@ document.getElementById('ia_date').valueAsDate = new Date();
   const DOC_REF = doc(db, "shop", "main");
   let unsubscribeSnapshot = null;
   let suppressNextIncoming = false; // prevents feedback loop when we write, then hear our own write back
+  let hasReceivedInitialSync = false;
   let wasSignedIn = false;
 
   function setSyncStatus(text, offline){
     const el = document.getElementById('syncStatus');
     const txt = document.getElementById('syncStatusText');
     if(!el) return;
-    txt.textContent = text;
-    el.classList.toggle('offline', !!offline);
+    const displayText = (!hasReceivedInitialSync && ['Synced','Offline — using saved data','Offline — saved on this device','Saving…'].includes(text)) ? 'Loading your data...' : text;
+    txt.textContent = displayText;
+    el.classList.toggle('offline', !!offline && hasReceivedInitialSync);
   }
 
   window.cloudSignIn = (email, password) => signInWithEmailAndPassword(auth, email, password);
@@ -1597,6 +1599,11 @@ document.getElementById('ia_date').valueAsDate = new Date();
 
   window.cloudSave = async (dataObj) => {
     if(suppressNextIncoming){ suppressNextIncoming = false; return; }
+    if(!hasReceivedInitialSync){
+      console.warn('Cloud save skipped until the first sync is received.');
+      setSyncStatus('Loading your data...');
+      return;
+    }
     try{
       setSyncStatus('Saving…');
       await setDoc(DOC_REF, dataObj);
@@ -1658,6 +1665,7 @@ document.getElementById('ia_date').valueAsDate = new Date();
       window.applyStaffDirectoryDefaults();
       loginScreen.style.display = 'none';
       appRoot.style.display = 'block';
+      setSyncStatus('Loading your data...');
       if(!unsubscribeSnapshot){
         unsubscribeSnapshot = onSnapshot(DOC_REF,
           (snap) => {
@@ -1666,9 +1674,10 @@ document.getElementById('ia_date').valueAsDate = new Date();
               window.applyCloudData(snap.data());
               suppressNextIncoming = false;
             }
+            hasReceivedInitialSync = true;
             setSyncStatus('Synced');
           },
-          (err) => { console.warn(err); setSyncStatus('Offline — using saved data', true); }
+          (err) => { console.warn(err); if(!hasReceivedInitialSync){ setSyncStatus('Loading your data...', false); } else { setSyncStatus('Offline — using saved data', true); } }
         );
       }
     } else {
